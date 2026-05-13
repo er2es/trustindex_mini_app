@@ -288,7 +288,11 @@
     // ── Keresés validációval (form submit) ───────────────────────
     function doSearch(page) {
         const q = input.value.trim();
-        if (q.length > 0 && q.length < 2) {
+        if (q === '') {
+            showSearchError('Kérjük, adj meg keresési kifejezést.');
+            return;
+        }
+        if (q.length < 2) {
             showSearchError('Kérjük, adj meg legalább 2 karaktert.');
             return;
         }
