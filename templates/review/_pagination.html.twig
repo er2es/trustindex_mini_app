@@ -1,7 +1,6 @@
 {% if totalPages > 1 %}
 {% set start = max(1, page - 1) %}
 {% set end   = min(totalPages, page + 1) %}
-{# Csúszó 3-as ablak: ha az ablak kisebb 3-nál, toljuk #}
 {% if end - start < 2 %}
     {% if start == 1 %}
         {% set end = min(totalPages, 3) %}
@@ -16,14 +15,14 @@
         {# Előző #}
         <li class="page-item {{ page <= 1 ? 'disabled' }}">
             <a class="page-link rounded-pill me-1 pagination-link"
-               href="#" data-page="{{ page - 1 }}"
+               href="?page={{ page - 1 }}" data-page="{{ page - 1 }}"
                aria-label="Előző">‹</a>
         </li>
 
         {# Első oldal ha nem látszik #}
         {% if start > 1 %}
             <li class="page-item">
-                <a class="page-link rounded-pill me-1 pagination-link" href="#" data-page="1">1</a>
+                <a class="page-link rounded-pill me-1 pagination-link" href="?page=1" data-page="1">1</a>
             </li>
             {% if start > 2 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
         {% endif %}
@@ -31,7 +30,7 @@
         {# Max 3 oldalszám #}
         {% for p in start..end %}
             <li class="page-item {{ p == page ? 'active' }}">
-                <a class="page-link rounded-pill me-1 pagination-link" href="#" data-page="{{ p }}">{{ p }}</a>
+                <a class="page-link rounded-pill me-1 pagination-link" href="?page={{ p }}" data-page="{{ p }}">{{ p }}</a>
             </li>
         {% endfor %}
 
@@ -39,14 +38,14 @@
         {% if end < totalPages %}
             {% if end < totalPages - 1 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
             <li class="page-item">
-                <a class="page-link rounded-pill me-1 pagination-link" href="#" data-page="{{ totalPages }}">{{ totalPages }}</a>
+                <a class="page-link rounded-pill me-1 pagination-link" href="?page={{ totalPages }}" data-page="{{ totalPages }}">{{ totalPages }}</a>
             </li>
         {% endif %}
 
         {# Következő #}
         <li class="page-item {{ page >= totalPages ? 'disabled' }}">
             <a class="page-link rounded-pill pagination-link"
-               href="#" data-page="{{ page + 1 }}"
+               href="?page={{ page + 1 }}" data-page="{{ page + 1 }}"
                aria-label="Következő">›</a>
         </li>
 

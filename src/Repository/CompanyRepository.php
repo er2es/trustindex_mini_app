@@ -51,14 +51,22 @@ class CompanyRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function countStats(): int
+    {
+        return (int) $this->getEntityManager()
+            ->createQuery('SELECT COUNT(DISTINCT c.id) FROM App\Entity\Review r JOIN r.company c')
+            ->getSingleScalarResult();
+    }
+
     /**
      * Company statistics ordered by average rating descending.
+     * Pass $perPage > 0 to paginate; omit or pass 0 to return all.
      *
      * @return CompanyStatsDto[]
      */
-    public function findStats(): array
+    public function findStats(int $page = 1, int $perPage = 0): array
     {
-        $rows = $this->getEntityManager()
+        $query = $this->getEntityManager()
             ->createQuery('
                 SELECT c.id AS companyId,
                        c.name AS companyName,
@@ -68,17 +76,20 @@ class CompanyRepository extends ServiceEntityRepository
                 JOIN r.company c
                 GROUP BY c.id, c.name
                 ORDER BY averageRating DESC
-            ')
-            ->getResult();
+            ');
+
+        if ($perPage > 0) {
+            $query->setFirstResult(($page - 1) * $perPage)->setMaxResults($perPage);
+        }
 
         return array_map(
             static fn (array $row) => new CompanyStatsDto(
                 companyId: (int) $row['companyId'],
                 companyName: $row['companyName'],
                 reviewCount: (int) $row['reviewCount'],
-                averageRating: round((float) $row['averageRating'], 2),
+                averageRating: min(5.0, max(0.0, round((float) ($row['averageRating'] ?? 0.0), 2))),
             ),
-            $rows
+            $query->getResult()
         );
     }
 

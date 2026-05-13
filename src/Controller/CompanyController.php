@@ -18,14 +18,23 @@ class CompanyController extends AbstractController
         private readonly CompanyRepository $companyRepository,
         private readonly ReviewRepository $reviewRepository,
         private readonly int $reviewsPerPage,
+        private readonly int $companiesPerPage,
     ) {
     }
 
     #[Route('', name: 'index', methods: ['GET'])]
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $page = max(1, $request->query->getInt('page', 1));
+        $total = $this->companyRepository->countStats();
+        $totalPages = max(1, (int) ceil($total / $this->companiesPerPage));
+        $page = min($page, $totalPages);
+
         return $this->render('company/index.html.twig', [
-            'stats' => $this->companyRepository->findStats(),
+            'stats' => $this->companyRepository->findStats($page, $this->companiesPerPage),
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
         ]);
     }
 

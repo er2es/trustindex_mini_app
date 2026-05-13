@@ -46,20 +46,3 @@
 
 </div>
 {% endblock %}
-
-{% block javascripts %}
-<script>
-(function () {
-    // ── Pagination ────────────────────────────────────────────────
-    document.addEventListener('click', function (e) {
-        const pageLink = e.target.closest('.pagination-link');
-        if (!pageLink) return;
-        e.preventDefault();
-        const p = parseInt(pageLink.dataset.page);
-        if (!isNaN(p) && p >= 1) {
-            window.location.href = window.location.pathname + '?page=' + p;
-        }
-    });
-})();
-</script>
-{% endblock %}

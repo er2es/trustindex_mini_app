@@ -82,7 +82,21 @@
             flex-shrink: 0;
         }
 
+        .pagination .page-link {
+            color: var(--ti-green);
+            border-color: #dee2e6;
+            min-width: 2.2rem;
+            text-align: center;
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: var(--ti-green);
+            border-color: var(--ti-green);
+            color: #fff;
+        }
+
         .pagination .page-item.disabled .page-link {
+            color: #aaa;
             border-color: transparent;
             background: transparent;
         }

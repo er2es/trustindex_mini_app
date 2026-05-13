@@ -8,7 +8,7 @@
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
         <div>
             <h1 class="h4 fw-bold mb-1">Cégek statisztikája</h1>
-            <p class="text-muted small mb-0">Átlagos értékelés szerint csökkenő sorrendben</p>
+            <p class="text-muted small mb-0">{{ total }} cég – átlagos értékelés szerint csökkenő sorrendben</p>
         </div>
     </div>
 
@@ -37,13 +37,20 @@
                         </div>
 
                         <div class="d-flex align-items-center gap-2">
-                            <span class="fw-bold fs-5" style="color: var(--ti-green);">{{ stat.averageRating }}</span>
+                            <span class="fw-bold fs-5" style="color: var(--ti-green);">{{ stat.averageRating|number_format(2, '.') }}</span>
                             <span class="text-muted small">/ 5.00 átlag</span>
                         </div>
                     </div>
                 </div>
             {% endfor %}
         </div>
+
+        {% if totalPages > 1 %}
+            {% include 'review/_pagination.html.twig' with {
+                page: page,
+                totalPages: totalPages
+            } %}
+        {% endif %}
     {% endif %}
 
 </div>

@@ -32,7 +32,7 @@ class ReviewApiController extends AbstractController
     #[Route('', name: 'list', methods: ['GET'])]
     #[OA\Get(
         summary: 'Vélemények listája',
-        description: 'Külső API-fogyasztóknak (pl. mobilapp, integráció). A webes felület saját AJAX-partial megoldást használ (/review), nem ezt a végpontot.',
+        description: 'Külső API-fogyasztóknak. A webes felület szerver-oldali renderelést használ, nem ezt a végpontot.',
     )]
     #[OA\Parameter(name: 'q', in: 'query', description: 'Keresési kifejezés (min. 2 karakter)', required: false)]
     #[OA\Parameter(name: 'includeText', in: 'query', description: 'Keresés a vélemény szövegében is (1 = igen)', required: false)]
@@ -63,6 +63,7 @@ class ReviewApiController extends AbstractController
                 'companyName' => $r->getCompanyName(),
                 'rating' => $r->getRating(),
                 'reviewText' => $r->getReviewText(),
+                'authorEmail' => '[redacted]',
                 'likes' => $r->getLikeCount(),
                 'dislikes' => $r->getDislikeCount(),
                 'createdAt' => $r->getCreatedAt()->format('Y-m-d'),
@@ -71,7 +72,10 @@ class ReviewApiController extends AbstractController
     }
 
     #[Route('/{id}', name: 'show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    #[OA\Get(summary: 'Egy vélemény részletei')]
+    #[OA\Get(
+        summary: 'Egy vélemény részletei',
+        description: 'Külső API-fogyasztóknak. A webes felület szerver-oldali renderelést használ, nem ezt a végpontot.',
+    )]
     #[OA\Response(response: 200, description: 'Sikeres lekérés')]
     #[OA\Response(response: 404, description: 'Nem található')]
     public function show(int $id): JsonResponse
@@ -86,7 +90,7 @@ class ReviewApiController extends AbstractController
             'companyName' => $review->getCompanyName(),
             'rating' => $review->getRating(),
             'reviewText' => $review->getReviewText(),
-            'authorEmail' => $review->getAuthorEmail(),
+            'authorEmail' => '[redacted]',
             'likes' => $review->getLikeCount(),
             'dislikes' => $review->getDislikeCount(),
             'createdAt' => $review->getCreatedAt()->format('Y-m-d'),

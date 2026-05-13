@@ -7,6 +7,7 @@ services:
         autoconfigure: true
         bind:
             int $reviewsPerPage: '%env(int:REVIEWS_PER_PAGE)%'
+            int $companiesPerPage: '%env(int:COMPANIES_PER_PAGE)%'
 
     App\:
         resource: '../src/'

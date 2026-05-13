@@ -20,27 +20,44 @@ class CompanyApiController extends AbstractController
         private readonly CompanyRepository $companyRepository,
         private readonly ReviewRepository $reviewRepository,
         private readonly int $reviewsPerPage,
+        private readonly int $companiesPerPage,
     ) {
     }
 
     #[Route('', name: 'list', methods: ['GET'])]
     #[OA\Get(
         summary: 'Cégstatisztikák listája átlag szerint csökkenő sorrendben',
-        description: 'Külső API-fogyasztóknak. A webes statisztika oldal (/companies) szerver-oldali renderelést használ, nem ezt a végpontot.',
+        description: 'Külső API-fogyasztóknak. A webes felület szerver-oldali renderelést használ, nem ezt a végpontot.',
     )]
-    #[OA\Response(response: 200, description: 'Sikeres lekérés')]
-    public function list(): JsonResponse
+    #[OA\Parameter(name: 'page', in: 'query', required: false, description: 'Oldalszám (alapértelmezett: 1)')]
+    #[OA\Response(response: 200, description: 'Sikeres lekérés – tartalmazza a companies tömböt és a lapozási metaadatokat (total, page, totalPages)')]
+    public function list(Request $request): JsonResponse
     {
-        return $this->json(array_map(static fn ($s) => [
-            'companyId' => $s->companyId,
-            'companyName' => $s->companyName,
-            'reviewCount' => $s->reviewCount,
-            'averageRating' => $s->averageRating,
-        ], $this->companyRepository->findStats()));
+        $page = max(1, $request->query->getInt('page', 1));
+        $total = $this->companyRepository->countStats();
+        $totalPages = max(1, (int) ceil($total / $this->companiesPerPage));
+        $page = min($page, $totalPages);
+
+        $stats = $this->companyRepository->findStats($page, $this->companiesPerPage);
+
+        return $this->json([
+            'total' => $total,
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'companies' => array_map(static fn ($s) => [
+                'companyId' => $s->companyId,
+                'companyName' => $s->companyName,
+                'reviewCount' => $s->reviewCount,
+                'averageRating' => $s->averageRating,
+            ], $stats),
+        ]);
     }
 
     #[Route('/{id}/reviews', name: 'reviews', requirements: ['id' => '\d+'], methods: ['GET'])]
-    #[OA\Get(summary: 'Egy cég véleményei lapozással')]
+    #[OA\Get(
+        summary: 'Egy cég véleményei lapozással',
+        description: 'Külső API-fogyasztóknak. A webes felület szerver-oldali renderelést használ, nem ezt a végpontot.',
+    )]
     #[OA\Parameter(name: 'id', in: 'path', required: true, description: 'Cég azonosítója')]
     #[OA\Parameter(name: 'page', in: 'query', required: false, description: 'Oldalszám (alapértelmezett: 1)')]
     #[OA\Response(response: 200, description: 'Sikeres lekérés')]
@@ -69,7 +86,7 @@ class CompanyApiController extends AbstractController
                 'id' => $r->getId(),
                 'rating' => $r->getRating(),
                 'reviewText' => $r->getReviewText(),
-                'authorEmail' => $r->getAuthorEmail(),
+                'authorEmail' => '[redacted]',
                 'likes' => $r->getLikeCount(),
                 'dislikes' => $r->getDislikeCount(),
                 'createdAt' => $r->getCreatedAt()->format('Y-m-d'),
