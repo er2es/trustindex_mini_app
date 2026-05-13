@@ -80,6 +80,10 @@ class ReviewController extends AbstractController
     public function new(Request $request): Response
     {
         $dto = new ReviewFormDto();
+        if (!$request->isMethod('POST')) {
+            $dto->companyId   = $request->query->getInt('companyId') ?: null;
+            $dto->companyName = $request->query->getString('companyName') ?: null;
+        }
         $form = $this->createForm(ReviewType::class, $dto);
         $form->handleRequest($request);
 

@@ -34,6 +34,10 @@
         color: #fff;
     }
     .pagination .page-item.disabled .page-link { color: #aaa; }
+    .input-group.is-invalid .input-group-text,
+    .input-group.is-invalid .form-control {
+        border-color: #dc3545;
+    }
 </style>
 {% endblock %}
 
@@ -146,12 +150,16 @@
     }
 
     // ── Validáció ────────────────────────────────────────────────
+    const inputGroup = input.closest('.input-group');
+
     function showSearchError(msg) {
+        inputGroup?.classList.add('is-invalid');
         input.classList.add('is-invalid');
         errorEl.textContent   = msg;
         errorEl.style.display = '';
     }
     function clearSearchError() {
+        inputGroup?.classList.remove('is-invalid');
         input.classList.remove('is-invalid');
         errorEl.style.display = 'none';
     }
