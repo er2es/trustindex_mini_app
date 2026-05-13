@@ -9,8 +9,8 @@ use App\Form\Dto\ReviewFormDto;
 use App\Repository\ReviewRepository;
 use App\Service\ReviewReactionService;
 use OpenApi\Attributes as OA;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -40,32 +40,32 @@ class ReviewApiController extends AbstractController
     #[OA\Response(response: 200, description: 'Sikeres lekérés – tartalmazza a reviews tömböt és a lapozási metaadatokat (total, page, totalPages)')]
     public function list(Request $request): JsonResponse
     {
-        $query       = trim($request->query->getString('q'));
+        $query = trim($request->query->getString('q'));
         $includeText = $request->query->getBoolean('includeText', false);
-        $page        = max(1, $request->query->getInt('page', 1));
+        $page = max(1, $request->query->getInt('page', 1));
 
-        $total      = '' !== $query
+        $total = '' !== $query
             ? $this->reviewRepository->countSearch($query, $includeText)
             : $this->reviewRepository->countAll();
         $totalPages = max(1, (int) ceil($total / $this->reviewsPerPage));
-        $page       = min($page, $totalPages);
+        $page = min($page, $totalPages);
 
         $reviews = '' !== $query
             ? $this->reviewRepository->search($query, $includeText, $page, $this->reviewsPerPage)
             : $this->reviewRepository->findAllOrderedByDate($page, $this->reviewsPerPage);
 
         return $this->json([
-            'total'      => $total,
-            'page'       => $page,
+            'total' => $total,
+            'page' => $page,
             'totalPages' => $totalPages,
-            'reviews'    => array_map(static fn ($r) => [
-                'id'          => $r->getId(),
+            'reviews' => array_map(static fn ($r) => [
+                'id' => $r->getId(),
                 'companyName' => $r->getCompanyName(),
-                'rating'      => $r->getRating(),
-                'reviewText'  => $r->getReviewText(),
-                'likes'       => $r->getLikeCount(),
-                'dislikes'    => $r->getDislikeCount(),
-                'createdAt'   => $r->getCreatedAt()->format('Y-m-d'),
+                'rating' => $r->getRating(),
+                'reviewText' => $r->getReviewText(),
+                'likes' => $r->getLikeCount(),
+                'dislikes' => $r->getDislikeCount(),
+                'createdAt' => $r->getCreatedAt()->format('Y-m-d'),
             ], $reviews),
         ]);
     }

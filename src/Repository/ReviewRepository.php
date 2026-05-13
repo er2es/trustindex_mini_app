@@ -118,5 +118,4 @@ class ReviewRepository extends ServiceEntityRepository
         }
         $qb->setFirstResult(($page - 1) * $perPage)->setMaxResults($perPage);
     }
-
 }
