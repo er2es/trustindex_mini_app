@@ -37,19 +37,31 @@ class DataLoadDemoCommand extends Command
         $count = max(1, (int) $input->getOption('count'));
         $faker = Factory::create('hu_HU');
 
-        $companyNames = [
-            'Kovács és Társa Kft.',
-            'Budapest Tech Zrt.',
-            'Napfény Vendéglő',
-            'Prémium Autószerelő',
-            'Digital Wave Kft.',
-            'Zöld Patika',
-            'FastClick Marketing',
-        ];
+        $conn = $this->em->getConnection();
+        $existing = (int) $conn->fetchOne('SELECT COUNT(*) FROM review');
+        if ($existing > 0) {
+            $io->warning(\sprintf('Az adatbázisban már van %d vélemény.', $existing));
+            if (!$io->confirm('Folytatod és hozzáadsz még?', false)) {
+                $io->note('Megszakítva.');
+
+                return Command::SUCCESS;
+            }
+        }
+
+        // min 3 cég, kb. count/8 arány (20→3, 50→7, 100→13, 200→25)
+        $companyCount = max(3, (int) ceil($count / 8));
+
+        $names = [];
+        while (\count($names) < $companyCount) {
+            $name = $faker->company();
+            if (!\in_array($name, $names, true)) {
+                $names[] = $name;
+            }
+        }
 
         $companies = array_map(
             fn (string $name) => $this->companyService->findOrCreate($name),
-            $companyNames,
+            $names,
         );
 
         $this->em->flush();
@@ -67,7 +79,6 @@ class DataLoadDemoCommand extends Command
 
         $this->em->flush();
 
-        // Néhány random reakció
         foreach ($reviews as $review) {
             $reactionCount = $faker->numberBetween(0, 6);
             $usedSessions = [];
@@ -85,7 +96,7 @@ class DataLoadDemoCommand extends Command
 
         $this->em->flush();
 
-        $io->success(\sprintf('%d vélemény betöltve %d céghez.', $count, \count($companies)));
+        $io->success(\sprintf('%d vélemény betöltve %d céghez.', $count, $companyCount));
 
         return Command::SUCCESS;
     }
