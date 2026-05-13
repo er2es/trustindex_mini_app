@@ -35,4 +35,5 @@
 ###> phpunit/phpunit ###
 #/phpunit.xml - feltettem az egyszerűbb kipróbálás miatt
 /.phpunit.cache/
+/.phpunit.result.cache
 ###< phpunit/phpunit ###
