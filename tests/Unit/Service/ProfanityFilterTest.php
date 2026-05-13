@@ -40,11 +40,15 @@ class ProfanityFilterTest extends TestCase
         self::assertTrue($this->filter->containsProfanity('FUCK this service.'));
     }
 
-    /** Ékezetes variáns is elkapja a szót */
-    public function testAccentInsensitiveDetection(): void
+    /**
+     * "szar*" a listán → csak pontos (ékezet-érzékeny) egyezés.
+     * "szár" átmegy, "szar" és "SZAR" el van kapva.
+     */
+    public function testExactMatchWordBlocksOnlyExactForm(): void
     {
-        // "szár" normalizálva = "szar" → match
-        self::assertTrue($this->filter->containsProfanity('Na ez szár!'));
+        self::assertTrue($this->filter->containsProfanity('Na ez szar!'));
+        self::assertTrue($this->filter->containsProfanity('Na ez SZAR!'));
+        self::assertFalse($this->filter->containsProfanity('Na ez szár!'));
     }
 
     /** Szótöredék NEM kap el – "szárny" ≠ "szar" */
