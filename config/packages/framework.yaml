@@ -10,11 +10,9 @@ framework:
     serializer:
         enabled: true
     property_access: ~
-    form: ~
     validation:
         email_validation_mode: html5
     assets: ~
-    csrf_protection: true
 
 when@test:
     framework:
