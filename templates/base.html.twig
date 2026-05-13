@@ -190,6 +190,42 @@
         toast.show();
         toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
     }
+
+    // ── Globális like/dislike delegálás (minden oldalon elérhető) ──
+    document.addEventListener('click', async function (e) {
+        const btn = e.target.closest('.card-reaction-btn');
+        if (!btn) return;
+
+        const reviewId = btn.dataset.reviewId;
+        const type     = btn.dataset.type;
+        btn.disabled   = true;
+
+        try {
+            const res = await fetch(`/api/reviews/${reviewId}/react`, {
+                method:  'POST',
+                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                body:    JSON.stringify({type}),
+            });
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+
+            const card       = btn.closest('article');
+            const likeBtn    = card.querySelector('[data-type="like"]');
+            const dislikeBtn = card.querySelector('[data-type="dislike"]');
+
+            card.querySelector('.reaction-like-count').textContent    = data.likes;
+            card.querySelector('.reaction-dislike-count').textContent = data.dislikes;
+
+            likeBtn.classList.toggle('btn-success', data.userReaction === 'like');
+            likeBtn.classList.toggle('btn-outline-secondary', data.userReaction !== 'like');
+            dislikeBtn.classList.toggle('btn-danger', data.userReaction === 'dislike');
+            dislikeBtn.classList.toggle('btn-outline-secondary', data.userReaction !== 'dislike');
+        } catch {
+            showToast('Hiba történt, kérjük próbáld újra.', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    });
 </script>
 
 {% block javascripts %}{% endblock %}

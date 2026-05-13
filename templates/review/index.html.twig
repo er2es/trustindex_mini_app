@@ -326,41 +326,6 @@
         if (!isNaN(p) && p >= 1) fetchResults(input.value.trim(), p);
     });
 
-    // ── Like / dislike delegálás ──────────────────────────────────
-    wrapper.addEventListener('click', async function (e) {
-        const reactionBtn = e.target.closest('.card-reaction-btn');
-        if (!reactionBtn) return;
-
-        const reviewId = reactionBtn.dataset.reviewId;
-        const type     = reactionBtn.dataset.type;
-        reactionBtn.disabled = true;
-
-        try {
-            const res = await fetch(`/api/reviews/${reviewId}/react`, {
-                method:  'POST',
-                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
-                body:    JSON.stringify({type}),
-            });
-            if (!res.ok) throw new Error();
-            const data = await res.json();
-
-            const card     = reactionBtn.closest('article');
-            const likeBtn  = card.querySelector('[data-type="like"]');
-            const dislikeBtn = card.querySelector('[data-type="dislike"]');
-
-            card.querySelector('.reaction-like-count').textContent    = data.likes;
-            card.querySelector('.reaction-dislike-count').textContent = data.dislikes;
-
-            likeBtn.classList.toggle('btn-success', data.userReaction === 'like');
-            likeBtn.classList.toggle('btn-outline-secondary', data.userReaction !== 'like');
-            dislikeBtn.classList.toggle('btn-danger', data.userReaction === 'dislike');
-            dislikeBtn.classList.toggle('btn-outline-secondary', data.userReaction !== 'dislike');
-        } catch {
-            showToast('Hiba történt, kérjük próbáld újra.', 'error');
-        } finally {
-            reactionBtn.disabled = false;
-        }
-    });
 })();
 </script>
 {% endblock %}
