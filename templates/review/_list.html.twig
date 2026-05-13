@@ -1,0 +1,20 @@
+{% if reviews is empty %}
+    <div class="text-center py-5 text-muted" id="empty-state">
+        <i class="bi bi-search fs-1 d-block mb-3"></i>
+        {% if query is defined and query %}
+            <p>Nincs találat a „<strong>{{ query }}</strong>" keresésre.</p>
+            <a href="{{ path('review_index') }}" class="btn btn-outline-secondary btn-sm">Összes vélemény</a>
+        {% else %}
+            <p>Még nincsenek vélemények. Legyél az első!</p>
+            <a href="{{ path('review_new') }}" class="btn btn-ti btn-sm px-4">Vélemény írása</a>
+        {% endif %}
+    </div>
+{% else %}
+    <div class="row g-3">
+        {% for review in reviews %}
+            <div class="col-12 col-md-6 col-xl-4">
+                {% include 'review/_card.html.twig' with {review: review} %}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}

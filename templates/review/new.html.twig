@@ -1,0 +1,198 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Vélemény írása – Trustindex{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 680px;">
+    <div class="mb-4">
+        <a href="{{ path('review_index') }}" class="text-decoration-none text-muted small">
+            <i class="bi bi-arrow-left me-1"></i>Vissza a listához
+        </a>
+    </div>
+
+    <div class="card p-4 p-md-5">
+        <h1 class="h4 fw-bold mb-1">Vélemény írása</h1>
+        <p class="text-muted small mb-4">Ossz meg tapasztalatot egy cégről. Az e-mail cím nem jelenik meg nyilvánosan.</p>
+
+        {% include 'review/_form.html.twig' %}
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+(function () {
+    // ── Star picker ──────────────────────────────────────────────
+    const ratingInput = document.getElementById('rating-value');
+    const stars = document.querySelectorAll('.star-btn');
+
+    function setStars(value) {
+        stars.forEach(btn => {
+            btn.style.color = parseInt(btn.dataset.value) <= value ? '#f5a623' : '#ccc';
+        });
+        if (ratingInput) ratingInput.value = value > 0 ? value : '';
+    }
+
+    stars.forEach(btn => {
+        btn.addEventListener('mouseenter', () => setStars(parseInt(btn.dataset.value)));
+        btn.addEventListener('click', () => {
+            setStars(parseInt(btn.dataset.value));
+            clearFieldError('rating');
+        });
+    });
+
+    document.getElementById('star-picker')?.addEventListener('mouseleave', () => {
+        setStars(parseInt(ratingInput?.value) || 0);
+    });
+
+    if (ratingInput?.value) setStars(parseInt(ratingInput.value));
+
+    // ── Error helpers ─────────────────────────────────────────────
+    const fieldIdMap = {
+        companyName: 'company-name-input',
+        reviewText: 'review_reviewText',
+        authorEmail: 'review_authorEmail',
+        rating: 'rating-value',
+    };
+
+    function showFieldError(field, message) {
+        const elId = fieldIdMap[field] || `review_${field}`;
+        const el = document.getElementById(elId);
+        if (!el) return;
+
+        el.classList.add('is-invalid');
+
+        const existing = el.parentElement.querySelector('.invalid-feedback');
+        if (existing) {
+            existing.textContent = message;
+        } else {
+            const div = document.createElement('div');
+            div.className = 'invalid-feedback d-block';
+            div.textContent = message;
+            el.after(div);
+        }
+    }
+
+    function clearFieldError(field) {
+        const elId = fieldIdMap[field] || `review_${field}`;
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.classList.remove('is-invalid');
+        el.classList.add('is-valid');
+        el.parentElement.querySelector('.invalid-feedback')?.remove();
+    }
+
+    function clearAllErrors() {
+        document.querySelectorAll('.is-invalid').forEach(el => {
+            el.classList.remove('is-invalid');
+            el.parentElement.querySelector('.invalid-feedback')?.remove();
+        });
+        document.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+    }
+
+    // ── Inline blur validation ────────────────────────────────────
+    const validateFields = ['company-name-input', 'review_reviewText', 'review_authorEmail'];
+    const reverseFieldMap = Object.fromEntries(Object.entries(fieldIdMap).map(([k, v]) => [v, k]));
+
+    validateFields.forEach(elId => {
+        const el = document.getElementById(elId);
+        if (!el) return;
+
+        el.addEventListener('blur', async function () {
+            const field = reverseFieldMap[elId];
+            if (!field) return;
+
+            try {
+                const res = await fetch('/api/reviews/validate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({field, value: el.value}),
+                });
+                const data = await res.json();
+                if (!data.valid) {
+                    showFieldError(field, data.errors[0]);
+                } else {
+                    clearFieldError(field);
+                }
+            } catch {}
+        });
+    });
+
+    // ── AJAX form submit ──────────────────────────────────────────
+    const reviewForm = document.getElementById('review-form');
+
+    reviewForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        clearAllErrors();
+
+        const submitBtn = reviewForm.querySelector('[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Küldés...';
+
+        try {
+            const res = await fetch(reviewForm.action, {
+                method: 'POST',
+                body: new FormData(reviewForm),
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                showToast(data.message, 'success');
+                setTimeout(() => { window.location.href = data.redirectUrl; }, 1400);
+                return;
+            }
+
+            // Inline errors – no toaster
+            Object.entries(data.errors || {}).forEach(([field, messages]) => {
+                showFieldError(field, messages[0]);
+            });
+        } catch {
+            showToast('Hiba történt a küldés során. Kérjük próbáld újra.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Vélemény beküldése';
+        }
+    });
+
+    // ── Autocomplete ──────────────────────────────────────────────
+    const companyInput = document.getElementById('company-name-input');
+    const dropdown = document.getElementById('company-autocomplete');
+    let debounceTimer;
+
+    companyInput?.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        const q = this.value.trim();
+        if (q.length < 3) { dropdown.style.display = 'none'; return; }
+
+        debounceTimer = setTimeout(async () => {
+            try {
+                const res = await fetch(`/api/companies/autocomplete?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                if (!data.length) { dropdown.style.display = 'none'; return; }
+
+                dropdown.innerHTML = data.map(item =>
+                    `<button type="button" class="list-group-item list-group-item-action py-2" data-name="${item.name}">${item.name}</button>`
+                ).join('');
+                dropdown.style.display = 'block';
+
+                dropdown.querySelectorAll('button').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        companyInput.value = btn.dataset.name;
+                        dropdown.style.display = 'none';
+                        clearFieldError('companyName');
+                    });
+                });
+            } catch {}
+        }, 250);
+    });
+
+    document.addEventListener('click', e => {
+        if (!companyInput?.contains(e.target) && !dropdown?.contains(e.target)) {
+            dropdown.style.display = 'none';
+        }
+    });
+})();
+</script>
+{% endblock %}

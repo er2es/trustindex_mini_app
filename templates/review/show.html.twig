@@ -1,0 +1,108 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ review.companyName }} – vélemény – Trustindex{% endblock %}
+
+{% block body %}
+<div class="container py-4" style="max-width: 720px;">
+
+    <div class="mb-4">
+        <a href="{{ path('review_index') }}" class="text-decoration-none text-muted small">
+            <i class="bi bi-arrow-left me-1"></i>Vissza a listához
+        </a>
+    </div>
+
+    <article class="card p-4 p-md-5">
+
+        <div class="d-flex align-items-start gap-3 mb-4">
+            <div class="review-avatar" style="width:52px;height:52px;font-size:1rem;">
+                {{ review.authorEmail|slice(0,2)|upper }}
+            </div>
+            <div>
+                <h1 class="h5 fw-bold mb-0">{{ review.companyName }}</h1>
+                <div class="text-muted small">{{ review.createdAt|date('Y.m.d') }}</div>
+                <div class="stars fs-4 mt-1">
+                    {% for i in 1..5 %}
+                        <span>{{ i <= review.rating ? '★' : '☆' }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <p class="lead mb-4" style="white-space: pre-line;">{{ review.reviewText }}</p>
+
+        <hr>
+
+        <div class="d-flex gap-3 align-items-center flex-wrap">
+            <span class="text-muted small">Hasznosnak találtad?</span>
+
+            <button type="button"
+                    class="btn btn-outline-secondary rounded-pill px-3 reaction-btn"
+                    data-review-id="{{ review.id }}"
+                    data-type="like"
+                    id="btn-like">
+                <i class="bi bi-hand-thumbs-up me-1"></i>Hasznos
+                <span class="badge bg-secondary rounded-pill ms-1" id="like-count">{{ review.likeCount }}</span>
+            </button>
+
+            <button type="button"
+                    class="btn btn-outline-secondary rounded-pill px-3 reaction-btn"
+                    data-review-id="{{ review.id }}"
+                    data-type="dislike"
+                    id="btn-dislike">
+                <i class="bi bi-hand-thumbs-down me-1"></i>Nem hasznos
+                <span class="badge bg-secondary rounded-pill ms-1" id="dislike-count">{{ review.dislikeCount }}</span>
+            </button>
+        </div>
+
+    </article>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+(function () {
+    const btnLike = document.getElementById('btn-like');
+    const btnDislike = document.getElementById('btn-dislike');
+
+    function setActive(userReaction) {
+        btnLike.classList.toggle('btn-success', userReaction === 'like');
+        btnLike.classList.toggle('btn-outline-secondary', userReaction !== 'like');
+        btnDislike.classList.toggle('btn-danger', userReaction === 'dislike');
+        btnDislike.classList.toggle('btn-outline-secondary', userReaction !== 'dislike');
+    }
+
+    document.querySelectorAll('.reaction-btn').forEach(btn => {
+        btn.addEventListener('click', async function () {
+            const reviewId = this.dataset.reviewId;
+            const type = this.dataset.type;
+
+            this.disabled = true;
+
+            try {
+                const res = await fetch(`/api/reviews/${reviewId}/react`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({type}),
+                });
+
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+
+                document.getElementById('like-count').textContent = data.likes;
+                document.getElementById('dislike-count').textContent = data.dislikes;
+                setActive(data.userReaction);
+            } catch {
+                showToast('Hiba történt, kérjük próbáld újra.', 'error');
+            } finally {
+                this.disabled = false;
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}
