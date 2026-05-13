@@ -24,7 +24,10 @@ class CompanyApiController extends AbstractController
     }
 
     #[Route('', name: 'list', methods: ['GET'])]
-    #[OA\Get(summary: 'Cégstatisztikák listája átlag szerint csökkenő sorrendben')]
+    #[OA\Get(
+        summary: 'Cégstatisztikák listája átlag szerint csökkenő sorrendben',
+        description: 'Külső API-fogyasztóknak. A webes statisztika oldal (/companies) szerver-oldali renderelést használ, nem ezt a végpontot.',
+    )]
     #[OA\Response(response: 200, description: 'Sikeres lekérés')]
     public function list(): JsonResponse
     {

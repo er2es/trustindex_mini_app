@@ -9,6 +9,7 @@ use App\Form\Dto\ReviewFormDto;
 use App\Repository\ReviewRepository;
 use App\Service\ReviewReactionService;
 use OpenApi\Attributes as OA;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,33 +24,50 @@ class ReviewApiController extends AbstractController
         private readonly ReviewRepository $reviewRepository,
         private readonly ReviewReactionService $reactionService,
         private readonly ValidatorInterface $validator,
+        #[Autowire('%env(int:REVIEWS_PER_PAGE)%')]
+        private readonly int $reviewsPerPage,
     ) {
     }
 
     #[Route('', name: 'list', methods: ['GET'])]
-    #[OA\Get(summary: 'Vélemények listája')]
-    #[OA\Parameter(name: 'q', in: 'query', description: 'Keresési kifejezés', required: false)]
-    #[OA\Parameter(name: 'includeText', in: 'query', description: 'Keresés a vélemény szövegében is', required: false)]
-    #[OA\Response(response: 200, description: 'Sikeres lekérés')]
+    #[OA\Get(
+        summary: 'Vélemények listája',
+        description: 'Külső API-fogyasztóknak (pl. mobilapp, integráció). A webes felület saját AJAX-partial megoldást használ (/review), nem ezt a végpontot.',
+    )]
+    #[OA\Parameter(name: 'q', in: 'query', description: 'Keresési kifejezés (min. 2 karakter)', required: false)]
+    #[OA\Parameter(name: 'includeText', in: 'query', description: 'Keresés a vélemény szövegében is (1 = igen)', required: false)]
+    #[OA\Parameter(name: 'page', in: 'query', description: 'Oldalszám (alapértelmezett: 1)', required: false)]
+    #[OA\Response(response: 200, description: 'Sikeres lekérés – tartalmazza a reviews tömböt és a lapozási metaadatokat (total, page, totalPages)')]
     public function list(Request $request): JsonResponse
     {
-        $query = trim($request->query->getString('q'));
+        $query       = trim($request->query->getString('q'));
         $includeText = $request->query->getBoolean('includeText', false);
+        $page        = max(1, $request->query->getInt('page', 1));
+
+        $total      = '' !== $query
+            ? $this->reviewRepository->countSearch($query, $includeText)
+            : $this->reviewRepository->countAll();
+        $totalPages = max(1, (int) ceil($total / $this->reviewsPerPage));
+        $page       = min($page, $totalPages);
 
         $reviews = '' !== $query
-            ? $this->reviewRepository->search($query, $includeText)
-            : $this->reviewRepository->findAllOrderedByDate();
+            ? $this->reviewRepository->search($query, $includeText, $page, $this->reviewsPerPage)
+            : $this->reviewRepository->findAllOrderedByDate($page, $this->reviewsPerPage);
 
-        return $this->json(array_map(static fn ($r) => [
-            'id' => $r->getId(),
-            'companyName' => $r->getCompanyName(),
-            'rating' => $r->getRating(),
-            'reviewText' => $r->getReviewText(),
-            'authorEmail' => $r->getAuthorEmail(),
-            'likes' => $r->getLikeCount(),
-            'dislikes' => $r->getDislikeCount(),
-            'createdAt' => $r->getCreatedAt()->format('Y-m-d'),
-        ], $reviews));
+        return $this->json([
+            'total'      => $total,
+            'page'       => $page,
+            'totalPages' => $totalPages,
+            'reviews'    => array_map(static fn ($r) => [
+                'id'          => $r->getId(),
+                'companyName' => $r->getCompanyName(),
+                'rating'      => $r->getRating(),
+                'reviewText'  => $r->getReviewText(),
+                'likes'       => $r->getLikeCount(),
+                'dislikes'    => $r->getDislikeCount(),
+                'createdAt'   => $r->getCreatedAt()->format('Y-m-d'),
+            ], $reviews),
+        ]);
     }
 
     #[Route('/{id}', name: 'show', requirements: ['id' => '\d+'], methods: ['GET'])]
