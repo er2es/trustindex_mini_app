@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Dto\CompanyStatsDto;
 use App\Entity\Company;
+use App\Service\TextNormalizer;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -96,7 +97,7 @@ class CompanyRepository extends ServiceEntityRepository
     /** @return string[] */
     private function tokenize(string $query): array
     {
-        $normalized = mb_strtolower(trim($query));
+        $normalized = TextNormalizer::normalize($query);
         $tokens = preg_split('/\s+/', $normalized, -1, \PREG_SPLIT_NO_EMPTY);
 
         return array_values(array_filter($tokens ?? [], static fn (string $t) => mb_strlen($t) >= 2));
