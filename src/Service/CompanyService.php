@@ -20,6 +20,11 @@ class CompanyService
      * Finds an existing company by normalized name or creates a new one.
      * The canonical name is taken from the first submission (original casing preserved).
      */
+    public function findById(int $id): ?Company
+    {
+        return $this->companyRepository->find($id);
+    }
+
     public function findOrCreate(string $name): Company
     {
         $normalized = TextNormalizer::normalize($name);

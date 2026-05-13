@@ -20,6 +20,7 @@ class ReviewType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
+            ->add('companyId', HiddenType::class, ['required' => false])
             ->add('companyName', TextType::class, [
                 'label' => 'Cégnév',
                 'attr' => [
@@ -53,10 +54,12 @@ class ReviewType extends AbstractType
         ;
 
         // HiddenType strings-ként adja vissza az értéket; átalakítjuk ?int-re
-        $builder->get('rating')->addModelTransformer(new CallbackTransformer(
+        $intTransformer = new CallbackTransformer(
             static fn (?int $v): string => $v !== null ? (string) $v : '',
             static fn (?string $v): ?int => ($v !== null && $v !== '') ? (int) $v : null,
-        ));
+        );
+        $builder->get('rating')->addModelTransformer($intTransformer);
+        $builder->get('companyId')->addModelTransformer($intTransformer);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

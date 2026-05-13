@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Company;
 use App\Entity\Review;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
@@ -36,6 +37,31 @@ class ReviewRepository extends ServiceEntityRepository
     {
         return (int) $this->createQueryBuilder('r')
             ->select('COUNT(r.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @return Review[] */
+    public function findByCompany(Company $company, int $page = 1, int $perPage = 0): array
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->join('r.company', 'c')
+            ->addSelect('c')
+            ->where('r.company = :company')
+            ->setParameter('company', $company)
+            ->orderBy('r.createdAt', 'DESC');
+
+        $this->applyPagination($qb, $page, $perPage);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function countByCompany(Company $company): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->where('r.company = :company')
+            ->setParameter('company', $company)
             ->getQuery()
             ->getSingleScalarResult();
     }

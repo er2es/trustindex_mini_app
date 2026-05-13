@@ -25,7 +25,8 @@
                     <div class="card h-100 p-4">
                         <div class="d-flex align-items-start justify-content-between gap-2">
                             <h2 class="h6 fw-bold mb-0 text-truncate">{{ stat.companyName }}</h2>
-                            <span class="badge rounded-pill text-bg-light text-muted flex-shrink-0">{{ stat.reviewCount }} db</span>
+                            <a href="{{ path('company_reviews', {id: stat.companyId}) }}"
+                               class="badge rounded-pill text-bg-light text-muted flex-shrink-0 text-decoration-none">{{ stat.reviewCount }} db</a>
                         </div>
 
                         <div class="stars fs-4 my-2">

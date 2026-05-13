@@ -10,6 +10,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class ReviewFormDto
 {
+    public ?int $companyId = null;
+
+    #[Assert\NotBlank(message: 'Kérjük, add meg a cégnevet.')]
     #[Assert\Length(max: 255)]
     #[NoProfanity]
     public ?string $companyName = null;

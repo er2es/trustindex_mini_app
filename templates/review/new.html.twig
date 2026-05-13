@@ -229,40 +229,91 @@
     });
 
     // ── Autocomplete ──────────────────────────────────────────────
-    const companyInput = document.getElementById('company-name-input');
-    const dropdown     = document.getElementById('company-autocomplete');
+    const companyInput  = document.getElementById('company-name-input');
+    const companyIdInput = document.getElementById('company-id-input');
+    const dropdown      = document.getElementById('company-autocomplete');
     let autocompleteTimer;
 
+    function closeDropdown() { dropdown.style.display = 'none'; }
+    function getDropdownItems() { return [...dropdown.querySelectorAll('button')]; }
+
+    function selectDropdownItem(btn) {
+        companyInput.value  = btn.dataset.name;
+        if (companyIdInput) companyIdInput.value = btn.dataset.id;
+        closeDropdown();
+        clearFieldError('companyName');
+        companyInput.focus();
+    }
+
     companyInput?.addEventListener('input', function () {
+        // Ha a user kézzel szerkeszt, töröljük az előzőleg kiválasztott ID-t
+        if (companyIdInput) companyIdInput.value = '';
         clearTimeout(autocompleteTimer);
         const q = this.value.trim();
-        if (q.length < 3) { dropdown.style.display = 'none'; return; }
+        if (q.length < 3) { closeDropdown(); return; }
 
         autocompleteTimer = setTimeout(async () => {
             try {
                 const res  = await fetch(`/api/companies/autocomplete?q=${encodeURIComponent(q)}`);
                 const data = await res.json();
-                if (!data.length) { dropdown.style.display = 'none'; return; }
+                if (!data.length) { closeDropdown(); return; }
 
                 dropdown.innerHTML = data.map(item =>
-                    `<button type="button" class="list-group-item list-group-item-action py-2" data-name="${item.name}">${item.name}</button>`
+                    `<button type="button" class="list-group-item list-group-item-action py-2" data-name="${item.name}" data-id="${item.id}">${item.name}</button>`
                 ).join('');
                 dropdown.style.display = 'block';
 
                 dropdown.querySelectorAll('button').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        companyInput.value     = btn.dataset.name;
-                        dropdown.style.display = 'none';
-                        clearFieldError('companyName');
-                    });
+                    btn.addEventListener('click', () => selectDropdownItem(btn));
                 });
             } catch {}
         }, 250);
     });
 
+    // Nyíl + Enter navigáció az input mezőn
+    companyInput?.addEventListener('keydown', e => {
+        const items = getDropdownItems();
+        if (e.key === 'ArrowDown' && items.length) {
+            e.preventDefault();
+            items[0].focus();
+            return;
+        }
+        // Enter a form beküldését megakadályozza, ha dropdown nyitva
+        if (e.key === 'Enter' && dropdown.style.display !== 'none') {
+            e.preventDefault();
+        }
+    });
+
+    // Nyíl + Enter navigáció a dropdown gombjakon
+    dropdown?.addEventListener('keydown', e => {
+        const items   = getDropdownItems();
+        const focused = dropdown.querySelector('button:focus');
+        const idx     = items.indexOf(focused);
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            items[idx < items.length - 1 ? idx + 1 : 0]?.focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (idx === 0) { companyInput.focus(); } else { items[idx - 1]?.focus(); }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (focused) selectDropdownItem(focused);
+        } else if (e.key === 'Escape') {
+            closeDropdown(); companyInput.focus();
+        }
+    });
+
+    // Enter a többi szövegmezőn ne küldje el a formot
+    document.querySelectorAll('#review-form input:not([type="submit"]):not([type="hidden"])').forEach(el => {
+        el.addEventListener('keydown', e => {
+            if (e.key === 'Enter') e.preventDefault();
+        });
+    });
+
     document.addEventListener('click', e => {
         if (!companyInput?.contains(e.target) && !dropdown?.contains(e.target)) {
-            dropdown.style.display = 'none';
+            closeDropdown();
         }
     });
 })();

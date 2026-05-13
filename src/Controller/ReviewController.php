@@ -85,9 +85,12 @@ class ReviewController extends AbstractController
 
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
-                $company = $this->companyService->findOrCreate(
-                    trim((string) $dto->companyName) ?: 'Névtelen'
-                );
+                if ($dto->companyId !== null) {
+                    $company = $this->companyService->findById($dto->companyId)
+                        ?? $this->companyService->findOrCreate((string) $dto->companyName);
+                } else {
+                    $company = $this->companyService->findOrCreate((string) $dto->companyName);
+                }
                 $review = new Review($company, (int) $dto->rating, (string) $dto->reviewText, (string) $dto->authorEmail);
 
                 $this->entityManager->persist($review);

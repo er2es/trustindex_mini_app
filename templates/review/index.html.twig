@@ -45,9 +45,6 @@
             <h1 class="h4 fw-bold mb-1">Ügyfélvélemények</h1>
             <p class="text-muted small mb-0" id="result-count">{{ total }} vélemény</p>
         </div>
-        <a href="{{ path('review_new') }}" class="btn btn-ti px-4">
-            <i class="bi bi-plus-lg me-1"></i>Vélemény írása
-        </a>
     </div>
 
     {# Kereső #}
@@ -167,7 +164,21 @@
     });
 
     // ── Autocomplete ─────────────────────────────────────────────
-    function closeAc() { acDropdown.style.display = 'none'; }
+    function closeAc() {
+        acDropdown.style.display = 'none';
+        acDropdown.querySelectorAll('button').forEach(b => b.setAttribute('tabindex', '-1'));
+    }
+
+    function getAcItems() { return [...acDropdown.querySelectorAll('button')]; }
+
+    function selectAcItem(btn) {
+        input.value = btn.dataset.name;
+        closeAc();
+        clearSearchError();
+        resetBtn.classList.remove('d-none');
+        input.focus();
+        doSearch(1);
+    }
 
     function handleAutocomplete(q) {
         clearTimeout(acTimer);
@@ -183,38 +194,67 @@
                 ).join('');
                 acDropdown.style.display = 'block';
                 acDropdown.querySelectorAll('button').forEach(b => {
-                    b.addEventListener('click', () => {
-                        input.value = b.dataset.name;
-                        closeAc();
-                        clearSearchError();
-                        resetBtn.classList.remove('d-none');
-                    });
+                    b.addEventListener('click', () => selectAcItem(b));
                 });
             } catch { closeAc(); }
         }, 250);
     }
 
+    // Nyíl billentyű navigáció az autocomplete-ben
+    input.addEventListener('keydown', e => {
+        const items = getAcItems();
+        if (!items.length || acDropdown.style.display === 'none') return;
+        const focused = acDropdown.querySelector('button:focus');
+        const idx     = items.indexOf(focused);
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            items[idx < items.length - 1 ? idx + 1 : 0]?.focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            items[idx > 0 ? idx - 1 : items.length - 1]?.focus();
+        } else if (e.key === 'Escape') {
+            closeAc(); input.focus();
+        }
+    });
+
+    // Ha a fókusz az AC gombokra kerül, nyíl navigáció ott is
+    acDropdown.addEventListener('keydown', e => {
+        const items   = getAcItems();
+        const focused = acDropdown.querySelector('button:focus');
+        const idx     = items.indexOf(focused);
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            items[idx < items.length - 1 ? idx + 1 : 0]?.focus();
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (idx === 0) { input.focus(); } else { items[idx - 1]?.focus(); }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (focused) selectAcItem(focused);
+        } else if (e.key === 'Escape') {
+            closeAc(); input.focus();
+        }
+    });
+
     document.addEventListener('click', e => {
         if (!input.contains(e.target) && !acDropdown.contains(e.target)) closeAc();
     });
 
-    // ── Keresés AJAX ─────────────────────────────────────────────
-    async function doSearch(page = 1) {
+    // ── Alap fetch (keresés validáció nélkül – lapozóhoz is) ─────
+    async function fetchResults(q, page) {
         if (submitting) return;
         closeAc();
-
-        const q = input.value.trim();
-        if (q.length === 0) { showSearchError('Kérjük, adj meg keresési kifejezést.'); input.focus(); return; }
-        if (q.length < 2)   { showSearchError('Legalább 2 karakter szükséges.'); input.focus(); return; }
-
-        clearSearchError();
         setLoading(true);
-        input.value = q;
-        resetBtn.classList.remove('d-none');
 
-        const params = new URLSearchParams(new FormData(form));
-        params.set('page', page);
-        const url = form.action + '?' + params.toString();
+        const params = new URLSearchParams();
+        if (q) params.set('q', q);
+        if (page > 1) params.set('page', String(page));
+        if (document.getElementById('includeText').checked) params.set('includeText', '1');
+
+        const url = form.action + (params.toString() ? '?' + params.toString() : '');
+        history.pushState({}, '', url);
         history.pushState({}, '', url);
         currentPage = page;
 
@@ -226,15 +266,18 @@
             wrapper.innerHTML   = data.html;
             counter.textContent = data.count + ' vélemény';
 
-            // Tartós állapot sáv frissítése
-            stateQuery.textContent = q;
-            stateCount.textContent = data.count + ' találat';
-            stateBar.classList.remove('d-none');
-
-            showToast(data.count === 0
-                ? 'Nincs találat erre: „' + q + '"'
-                : data.count + ' találat',
-                data.count === 0 ? 'error' : 'success');
+            // Tartós állapot sáv: csak ha van keresési kifejezés
+            if (q) {
+                stateQuery.textContent = q;
+                stateCount.textContent = data.count + ' találat';
+                stateBar.classList.remove('d-none');
+                showToast(data.count === 0
+                    ? 'Nincs találat erre: „' + q + '"'
+                    : data.count + ' találat',
+                    data.count === 0 ? 'error' : 'success');
+            } else {
+                stateBar.classList.add('d-none');
+            }
         } catch {
             showToast('Hiba a keresés során. Kérjük próbáld újra.', 'error');
         } finally {
@@ -242,8 +285,22 @@
         }
     }
 
+    // ── Keresés validációval (form submit) ───────────────────────
+    function doSearch(page) {
+        const q = input.value.trim();
+        if (q.length > 0 && q.length < 2) {
+            showSearchError('Kérjük, adj meg legalább 2 karaktert.');
+            return;
+        }
+        clearSearchError();
+        fetchResults(q, page);
+    }
+
     form.addEventListener('submit', e => { e.preventDefault(); doSearch(1); });
-    window.addEventListener('popstate', () => form.requestSubmit());
+    window.addEventListener('popstate', () => {
+        const params = new URLSearchParams(window.location.search);
+        fetchResults(params.get('q') || '', parseInt(params.get('page') || '1'));
+    });
 
     // ── Pagination klikk delegálás ────────────────────────────────
     wrapper.addEventListener('click', function (e) {
@@ -251,7 +308,7 @@
         if (!pageLink) return;
         e.preventDefault();
         const p = parseInt(pageLink.dataset.page);
-        if (!isNaN(p) && p >= 1) doSearch(p);
+        if (!isNaN(p) && p >= 1) fetchResults(input.value.trim(), p);
     });
 
     // ── Like / dislike delegálás ──────────────────────────────────

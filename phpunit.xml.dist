@@ -17,6 +17,7 @@
         <env name="DATABASE_URL" value="sqlite:///%kernel.project_dir%/var/data_test.db"/>
         <env name="KERNEL_CLASS" value="App\Kernel"/>
         <env name="DEFAULT_URI" value="http://localhost"/>
+        <env name="REVIEWS_PER_PAGE" value="10"/>
     </php>
 
     <testsuites>

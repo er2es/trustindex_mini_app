@@ -1,12 +1,12 @@
 {% if totalPages > 1 %}
-{% set start = [1, page - 1]|max %}
-{% set end   = [totalPages, page + 1]|min %}
+{% set start = max(1, page - 1) %}
+{% set end   = min(totalPages, page + 1) %}
 {# Csúszó 3-as ablak: ha az ablak kisebb 3-nál, toljuk #}
 {% if end - start < 2 %}
     {% if start == 1 %}
-        {% set end = [totalPages, 3]|min %}
+        {% set end = min(totalPages, 3) %}
     {% else %}
-        {% set start = [1, end - 2]|max %}
+        {% set start = max(1, end - 2) %}
     {% endif %}
 {% endif %}
 

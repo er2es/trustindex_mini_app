@@ -1,0 +1,103 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ company.name }} – vélemények – Trustindex{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+
+    <div class="mb-4">
+        <a href="{{ path('company_index') }}" class="text-decoration-none text-muted small">
+            <i class="bi bi-arrow-left me-1"></i>Vissza a statisztikákhoz
+        </a>
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+        <div>
+            <h1 class="h4 fw-bold mb-1">{{ company.name }}</h1>
+            <p class="text-muted small mb-0">{{ total }} vélemény</p>
+        </div>
+        <a href="{{ path('review_new') }}" class="btn btn-ti px-4">
+            <i class="bi bi-plus-lg me-1"></i>Vélemény írása
+        </a>
+    </div>
+
+    {% if reviews is empty %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-chat-square fs-1 d-block mb-3"></i>
+            <p>Még nincsenek vélemények erről a cégről.</p>
+            <a href="{{ path('review_new') }}" class="btn btn-ti btn-sm px-4">Első vélemény írása</a>
+        </div>
+    {% else %}
+        <div class="row g-3">
+            {% for review in reviews %}
+                <div class="col-12 col-md-6 col-xl-4">
+                    {% include 'review/_card.html.twig' with {review: review} %}
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if totalPages > 1 %}
+            {% include 'review/_pagination.html.twig' with {
+                page: page,
+                totalPages: totalPages
+            } %}
+        {% endif %}
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+(function () {
+    const wrapper = document.querySelector('.container');
+
+    // ── Like / dislike delegálás ──────────────────────────────────
+    wrapper?.addEventListener('click', async function (e) {
+        const reactionBtn = e.target.closest('.card-reaction-btn');
+        if (!reactionBtn) return;
+
+        const reviewId = reactionBtn.dataset.reviewId;
+        const type     = reactionBtn.dataset.type;
+        reactionBtn.disabled = true;
+
+        try {
+            const res = await fetch(`/api/reviews/${reviewId}/react`, {
+                method:  'POST',
+                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                body:    JSON.stringify({type}),
+            });
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+
+            const card       = reactionBtn.closest('article');
+            const likeBtn    = card.querySelector('[data-type="like"]');
+            const dislikeBtn = card.querySelector('[data-type="dislike"]');
+
+            card.querySelector('.reaction-like-count').textContent    = data.likes;
+            card.querySelector('.reaction-dislike-count').textContent = data.dislikes;
+
+            likeBtn.classList.toggle('btn-success', data.userReaction === 'like');
+            likeBtn.classList.toggle('btn-outline-secondary', data.userReaction !== 'like');
+            dislikeBtn.classList.toggle('btn-danger', data.userReaction === 'dislike');
+            dislikeBtn.classList.toggle('btn-outline-secondary', data.userReaction !== 'dislike');
+        } catch {
+            showToast('Hiba történt, kérjük próbáld újra.', 'error');
+        } finally {
+            reactionBtn.disabled = false;
+        }
+    });
+
+    // ── Pagination ────────────────────────────────────────────────
+    wrapper?.addEventListener('click', function (e) {
+        const pageLink = e.target.closest('.pagination-link');
+        if (!pageLink) return;
+        e.preventDefault();
+        const p = parseInt(pageLink.dataset.page);
+        if (!isNaN(p) && p >= 1) {
+            window.location.href = window.location.pathname + '?page=' + p;
+        }
+    });
+})();
+</script>
+{% endblock %}

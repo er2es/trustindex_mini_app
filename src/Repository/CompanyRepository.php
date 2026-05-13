@@ -60,7 +60,8 @@ class CompanyRepository extends ServiceEntityRepository
     {
         $rows = $this->getEntityManager()
             ->createQuery('
-                SELECT c.name AS companyName,
+                SELECT c.id AS companyId,
+                       c.name AS companyName,
                        COUNT(r.id) AS reviewCount,
                        AVG(r.rating) AS averageRating
                 FROM App\Entity\Review r
@@ -72,6 +73,7 @@ class CompanyRepository extends ServiceEntityRepository
 
         return array_map(
             static fn (array $row) => new CompanyStatsDto(
+                companyId: (int) $row['companyId'],
                 companyName: $row['companyName'],
                 reviewCount: (int) $row['reviewCount'],
                 averageRating: round((float) $row['averageRating'], 2),
