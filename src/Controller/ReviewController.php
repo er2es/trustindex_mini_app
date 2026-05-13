@@ -128,7 +128,7 @@ class ReviewController extends AbstractController
     }
 
     #[Route('/{id}', name: 'show', requirements: ['id' => '\d+'], methods: ['GET'])]
-    public function show(int $id): Response
+    public function show(int $id, Request $request): Response
     {
         $review = $this->reviewRepository->find($id);
 
@@ -136,8 +136,14 @@ class ReviewController extends AbstractController
             throw $this->createNotFoundException('A vélemény nem található.');
         }
 
+        $backCompanyId = $request->query->getInt('backCompany');
+        $back = $backCompanyId > 0
+            ? $this->generateUrl('company_reviews', ['id' => $backCompanyId])
+            : $this->generateUrl('review_index');
+
         return $this->render('review/show.html.twig', [
             'review' => $review,
+            'back'   => $back,
         ]);
     }
 }

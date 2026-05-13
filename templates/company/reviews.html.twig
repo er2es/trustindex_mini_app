@@ -31,7 +31,7 @@
         <div class="row g-3">
             {% for review in reviews %}
                 <div class="col-12 col-md-6 col-xl-4">
-                    {% include 'review/_card.html.twig' with {review: review} %}
+                    {% include 'review/_card.html.twig' with {review: review, backCompanyId: company.id} %}
                 </div>
             {% endfor %}
         </div>
