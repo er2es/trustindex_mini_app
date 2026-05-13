@@ -25,6 +25,7 @@ class DataClearCommand extends Command
 
         if (!$io->confirm('Biztosan törlöd az összes adatot?', false)) {
             $io->warning('Megszakítva.');
+
             return Command::SUCCESS;
         }
 
@@ -34,6 +35,7 @@ class DataClearCommand extends Command
         $conn->executeStatement('DELETE FROM company');
 
         $io->success('Összes adat törölve.');
+
         return Command::SUCCESS;
     }
 }

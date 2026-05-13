@@ -7,7 +7,6 @@ namespace App\Command;
 use App\Entity\Review;
 use App\Entity\ReviewReaction;
 use App\Service\CompanyService;
-use App\Service\TextNormalizer;
 use Doctrine\ORM\EntityManagerInterface;
 use Faker\Factory;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -34,7 +33,7 @@ class DataLoadDemoCommand extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io    = new SymfonyStyle($input, $output);
+        $io = new SymfonyStyle($input, $output);
         $count = max(1, (int) $input->getOption('count'));
         $faker = Factory::create('hu_HU');
 
@@ -57,11 +56,11 @@ class DataLoadDemoCommand extends Command
 
         $reviews = [];
         for ($i = 0; $i < $count; ++$i) {
-            $company  = $faker->randomElement($companies);
-            $rating   = $faker->numberBetween(1, 5);
-            $text     = $faker->realText($faker->numberBetween(80, 400));
-            $email    = $faker->safeEmail();
-            $review   = new Review($company, $rating, $text, $email);
+            $company = $faker->randomElement($companies);
+            $rating = $faker->numberBetween(1, 5);
+            $text = $faker->realText($faker->numberBetween(80, 400));
+            $email = $faker->safeEmail();
+            $review = new Review($company, $rating, $text, $email);
             $this->em->persist($review);
             $reviews[] = $review;
         }
@@ -71,14 +70,14 @@ class DataLoadDemoCommand extends Command
         // Néhány random reakció
         foreach ($reviews as $review) {
             $reactionCount = $faker->numberBetween(0, 6);
-            $usedSessions  = [];
+            $usedSessions = [];
             for ($j = 0; $j < $reactionCount; ++$j) {
                 $sessionId = $faker->uuid();
                 if (\in_array($sessionId, $usedSessions, true)) {
                     continue;
                 }
                 $usedSessions[] = $sessionId;
-                $type     = $faker->randomElement([ReviewReaction::TYPE_LIKE, ReviewReaction::TYPE_DISLIKE]);
+                $type = $faker->randomElement([ReviewReaction::TYPE_LIKE, ReviewReaction::TYPE_DISLIKE]);
                 $reaction = new ReviewReaction($review, $type, $sessionId);
                 $this->em->persist($reaction);
             }
@@ -86,7 +85,8 @@ class DataLoadDemoCommand extends Command
 
         $this->em->flush();
 
-        $io->success(sprintf('%d vélemény betöltve %d céghez.', $count, \count($companies)));
+        $io->success(\sprintf('%d vélemény betöltve %d céghez.', $count, \count($companies)));
+
         return Command::SUCCESS;
     }
 }

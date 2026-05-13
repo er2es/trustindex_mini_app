@@ -143,7 +143,7 @@ class ReviewController extends AbstractController
 
         return $this->render('review/show.html.twig', [
             'review' => $review,
-            'back'   => $back,
+            'back' => $back,
         ]);
     }
 }
