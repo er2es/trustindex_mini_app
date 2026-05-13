@@ -1,0 +1,36 @@
+# Tiltott / vulgáris szavak – mentés előtt ellenőrzött lista.
+# A szekciók csak szervezési célból vannak, a service MINDEN szót egybe tölt és egyszerre ellenőrzi.
+# Nincs nyelvváltó logika: ha a listán van, nem számít milyen nyelven írják.
+# Matching: case-insensitive + ékezet-insensitive (szár = szar = SZAR = SZÁR).
+# Bővítés: adj hozzá új sort bármelyik szekcióba, vagy hozz létre újat.
+app:
+    profanity:
+        hu:
+            - szar
+            - kurva
+            - bazdmeg
+            - fasz
+            - geci
+            - rohadék
+            - segg
+            - picsába
+            - büdös
+            - hülye
+            - baszd
+            - faszt
+            - gecis
+            - szaros
+            - kurváját
+        en:
+            - fuck
+            - shit
+            - asshole
+            - bitch
+            - bastard
+            - cunt
+            - piss
+            - crap
+            - bullshit
+            - motherfucker
+            - dickhead
+            - dumbass

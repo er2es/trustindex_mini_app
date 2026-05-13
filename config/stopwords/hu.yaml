@@ -1,0 +1,3 @@
+# Magyar kiterjesztett profanitás lista – automatikusan betöltődik a config/stopwords.yaml mellé.
+# Ide kerülhetnek hosszabb, specifikusabb kifejezések.
+words: []

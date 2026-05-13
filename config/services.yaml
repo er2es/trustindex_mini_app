@@ -1,0 +1,14 @@
+parameters:
+    app.stopwords: '%kernel.project_dir%/config/stopwords'
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Kernel.php'

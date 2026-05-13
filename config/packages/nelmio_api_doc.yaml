@@ -1,0 +1,14 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: 'Trustindex Review API'
+            description: 'Cégértékelő mini-alkalmazás REST API dokumentáció'
+            version: '1.0.0'
+        components:
+            securitySchemes: []
+    areas:
+        default:
+            path_patterns:
+                - ^/api(?!/doc)
+    html_config:
+        assets_mode: cdn

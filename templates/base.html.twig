@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Trustindex Vélemények{% endblock %}</title>
+
+    {# Bootstrap 5 #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    {# Bootstrap Icons #}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        :root {
+            --ti-green: #2ea84a;
+            --ti-green-dark: #237a38;
+            --ti-bg: #f5f3ef;
+            --ti-star: #f5a623;
+        }
+
+        body {
+            background-color: var(--ti-bg);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .navbar-brand img {
+            height: 28px;
+        }
+
+        .btn-ti {
+            background-color: var(--ti-green);
+            color: #fff;
+            border-radius: 50px;
+            border: none;
+        }
+
+        .btn-ti:hover {
+            background-color: var(--ti-green-dark);
+            color: #fff;
+        }
+
+        .btn-outline-ti {
+            color: var(--ti-green);
+            border: 1px solid var(--ti-green);
+            border-radius: 50px;
+        }
+
+        .btn-outline-ti:hover {
+            background-color: var(--ti-green);
+            color: #fff;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+        }
+
+        .stars {
+            color: var(--ti-star);
+        }
+
+        .review-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background-color: #7c5cbf;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            z-index: 1090;
+        }
+    </style>
+
+    {% block stylesheets %}{% endblock %}
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #111;">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-white" href="{{ path('review_index') }}">
+            <i class="bi bi-check-circle-fill text-success me-1"></i>Trustindex
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mx-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ path('review_index') }}">Vélemények</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ path('company_index') }}">Cégek</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ path('app_swagger_ui') }}">API Docs</a>
+                </li>
+            </ul>
+            <a href="{{ path('review_new') }}" class="btn btn-ti px-4">
+                <i class="bi bi-plus-lg me-1"></i>Vélemény írása
+            </a>
+        </div>
+    </div>
+</nav>
+
+{# Flash üzenetek #}
+{% for type, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="alert alert-{{ type == 'success' ? 'success' : 'danger' }} alert-dismissible fade show mb-0 rounded-0" role="alert">
+            <div class="container">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        </div>
+    {% endfor %}
+{% endfor %}
+
+{# Toaster konténer (AJAX válaszokhoz) #}
+<div class="toast-container" id="toastContainer"></div>
+
+<main class="py-4">
+    {% block body %}{% endblock %}
+</main>
+
+<footer class="py-4 mt-4 border-top" style="background-color: #111; color: #aaa;">
+    <div class="container text-center small">
+        Trustindex Cégértékelő &copy; {{ "now"|date("Y") }}
+    </div>
+</footer>
+
+{# Bootstrap 5 JS #}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const id = 'toast-' + Date.now();
+        const bg = type === 'success' ? 'bg-success' : 'bg-danger';
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill';
+
+        container.insertAdjacentHTML('beforeend', `
+            <div id="${id}" class="toast align-items-center text-white ${bg} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi ${icon} me-2"></i>${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        `);
+
+        const toastEl = document.getElementById(id);
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+        toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());
+    }
+</script>
+
+{% block javascripts %}{% endblock %}
+</body>
+</html>
