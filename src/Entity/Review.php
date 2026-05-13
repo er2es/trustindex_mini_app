@@ -144,14 +144,14 @@ class Review
     public function getLikeCount(): int
     {
         return $this->reactions->filter(
-            fn(ReviewReaction $r) => $r->getType() === ReviewReaction::TYPE_LIKE
+            static fn (ReviewReaction $r) => $r->getType() === ReviewReaction::TYPE_LIKE
         )->count();
     }
 
     public function getDislikeCount(): int
     {
         return $this->reactions->filter(
-            fn(ReviewReaction $r) => $r->getType() === ReviewReaction::TYPE_DISLIKE
+            static fn (ReviewReaction $r) => $r->getType() === ReviewReaction::TYPE_DISLIKE
         )->count();
     }
 }

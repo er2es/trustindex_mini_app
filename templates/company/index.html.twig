@@ -29,7 +29,7 @@
                         </div>
 
                         <div class="stars fs-4 my-2">
-                            {% set fullStars = stat.averageRating|round(0, 'floor')|int %}
+                            {% set fullStars = stat.averageRating|round(0, 'floor') %}
                             {% for i in 1..5 %}
                                 <span style="color: {{ i <= fullStars ? 'var(--ti-star)' : '#ddd' }};">★</span>
                             {% endfor %}

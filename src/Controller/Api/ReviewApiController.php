@@ -8,7 +8,6 @@ use App\Entity\ReviewReaction;
 use App\Form\Dto\ReviewFormDto;
 use App\Repository\ReviewRepository;
 use App\Service\ReviewReactionService;
-use Nelmio\ApiDocBundle\Attribute\Model;
 use OpenApi\Attributes as OA;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -41,7 +40,7 @@ class ReviewApiController extends AbstractController
             ? $this->reviewRepository->search($query, $includeText)
             : $this->reviewRepository->findAllOrderedByDate();
 
-        return $this->json(array_map(static fn($r) => [
+        return $this->json(array_map(static fn ($r) => [
             'id' => $r->getId(),
             'companyName' => $r->getCompanyName(),
             'rating' => $r->getRating(),
@@ -92,7 +91,7 @@ class ReviewApiController extends AbstractController
         $data = json_decode($request->getContent(), true) ?? [];
         $type = $data['type'] ?? null;
 
-        if (!in_array($type, [ReviewReaction::TYPE_LIKE, ReviewReaction::TYPE_DISLIKE], true)) {
+        if (!\in_array($type, [ReviewReaction::TYPE_LIKE, ReviewReaction::TYPE_DISLIKE], true)) {
             return $this->json(['error' => 'Érvénytelen típus (like vagy dislike)'], 400);
         }
 
@@ -120,7 +119,7 @@ class ReviewApiController extends AbstractController
         $value = $data['value'] ?? '';
 
         $allowed = ['companyName', 'reviewText', 'authorEmail', 'rating'];
-        if (!in_array($field, $allowed, true)) {
+        if (!\in_array($field, $allowed, true)) {
             return $this->json(['valid' => true, 'errors' => []]);
         }
 
@@ -129,13 +128,13 @@ class ReviewApiController extends AbstractController
 
         $violations = $this->validator->validateProperty($dto, $field);
 
-        if (0 === count($violations)) {
+        if (0 === \count($violations)) {
             return $this->json(['valid' => true, 'errors' => []]);
         }
 
         return $this->json([
             'valid' => false,
-            'errors' => array_map(static fn($v) => $v->getMessage(), iterator_to_array($violations)),
+            'errors' => array_map(static fn ($v) => $v->getMessage(), iterator_to_array($violations)),
         ]);
     }
 }

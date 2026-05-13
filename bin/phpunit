@@ -1,0 +1,12 @@
+#!/usr/bin/env php
+<?php
+
+require dirname(__DIR__) . '/vendor/autoload.php';
+
+$phpunitBin = dirname(__DIR__) . '/vendor/phpunit/phpunit/phpunit';
+
+if (!file_exists($phpunitBin)) {
+    throw new \RuntimeException('PHPUnit not found. Run: composer install');
+}
+
+require $phpunitBin;

@@ -25,7 +25,7 @@ class CompanyApiController extends AbstractController
     #[OA\Response(response: 200, description: 'Sikeres lekérés')]
     public function list(): JsonResponse
     {
-        return $this->json(array_map(static fn($s) => [
+        return $this->json(array_map(static fn ($s) => [
             'companyName' => $s->companyName,
             'reviewCount' => $s->reviewCount,
             'averageRating' => $s->averageRating,
@@ -46,7 +46,7 @@ class CompanyApiController extends AbstractController
 
         $companies = $this->companyRepository->findForAutocomplete($q);
 
-        return $this->json(array_map(static fn($c) => [
+        return $this->json(array_map(static fn ($c) => [
             'id' => $c->getId(),
             'name' => $c->getName(),
         ], $companies));

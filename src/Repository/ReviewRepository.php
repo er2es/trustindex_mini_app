@@ -72,8 +72,8 @@ class ReviewRepository extends ServiceEntityRepository
     private function tokenize(string $query): array
     {
         $normalized = mb_strtolower(trim($query));
-        $tokens = preg_split('/\s+/', $normalized, -1, PREG_SPLIT_NO_EMPTY);
+        $tokens = preg_split('/\s+/', $normalized, -1, \PREG_SPLIT_NO_EMPTY);
 
-        return array_values(array_filter($tokens ?? [], static fn(string $t) => mb_strlen($t) >= 2));
+        return array_values(array_filter($tokens ?? [], static fn (string $t) => mb_strlen($t) >= 2));
     }
 }

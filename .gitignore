@@ -1,4 +1,5 @@
 ###> symfony ###
+#.env - feltettem az egyszerűbb kipróbálás miatt
 /.env.local
 /.env.local.php
 /.env.*.local
@@ -30,3 +31,8 @@
 /.php-cs-fixer.php
 /.php-cs-fixer.cache
 ###< friendsofphp/php-cs-fixer ###
+
+###> phpunit/phpunit ###
+#/phpunit.xml - feltettem az egyszerűbb kipróbálás miatt
+/.phpunit.cache/
+###< phpunit/phpunit ###

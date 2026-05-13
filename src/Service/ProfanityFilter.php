@@ -25,7 +25,7 @@ class ProfanityFilter
     public function containsProfanity(string $text): bool
     {
         foreach (TextNormalizer::tokenize($text) as $token) {
-            if (in_array(TextNormalizer::normalize($token), $this->bannedWords, true)) {
+            if (\in_array(TextNormalizer::normalize($token), $this->bannedWords, true)) {
                 return true;
             }
         }

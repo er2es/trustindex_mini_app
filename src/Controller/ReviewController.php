@@ -41,7 +41,7 @@ class ReviewController extends AbstractController
         if ($request->isXmlHttpRequest()) {
             return $this->json([
                 'html' => $this->renderView('review/_list.html.twig', ['reviews' => $reviews, 'query' => $query]),
-                'count' => count($reviews),
+                'count' => \count($reviews),
             ]);
         }
 

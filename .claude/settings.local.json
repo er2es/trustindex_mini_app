@@ -3,7 +3,9 @@
     "allow": [
       "Bash(php --version)",
       "Bash(composer --version)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(cd /d \"d:\\\\xampp_php7\\\\htdocs\\\\trustindex_mini_app\")",
+      "Bash(dir vendor\\\\bin)"
     ]
   }
 }

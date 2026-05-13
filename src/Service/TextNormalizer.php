@@ -8,7 +8,7 @@ class TextNormalizer
 {
     /**
      * Lowercase + NFD decomposition + strip diacritics + trim.
-     * "Szárny" → "szarny", "FÜTYÜL" → "futyul"
+     * "Szárny" → "szarny", "FÜTYÜL" → "futyul".
      */
     public static function normalize(string $text): string
     {
@@ -25,7 +25,7 @@ class TextNormalizer
      */
     public static function tokenize(string $text): array
     {
-        $tokens = preg_split('/[\s\p{P}]+/u', trim($text), -1, PREG_SPLIT_NO_EMPTY);
+        $tokens = preg_split('/[\s\p{P}]+/u', trim($text), -1, \PREG_SPLIT_NO_EMPTY);
 
         return $tokens !== false ? array_values($tokens) : [];
     }
