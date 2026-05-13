@@ -60,20 +60,21 @@ class ReviewController extends AbstractController
 
         if ($request->isXmlHttpRequest()) {
             return $this->json([
-                'html' => $this->renderView('review/_list.html.twig', array_merge(
-                    ['reviews' => $reviews],
-                    $paginationVars,
-                )),
+                'html' => $this->renderView('review/_list.html.twig', [
+                    'reviews' => $reviews,
+                    ...$paginationVars,
+                ]),
                 'count' => $total,
                 'page' => $page,
                 'totalPages' => $totalPages,
             ]);
         }
 
-        return $this->render('review/index.html.twig', array_merge(
-            ['reviews' => $reviews, 'includeText' => $includeText],
-            $paginationVars,
-        ));
+        return $this->render('review/index.html.twig', [
+            'reviews' => $reviews,
+            'includeText' => $includeText,
+            ...$paginationVars,
+        ]);
     }
 
     #[Route('/new', name: 'new', methods: ['GET', 'POST'])]
@@ -82,7 +83,7 @@ class ReviewController extends AbstractController
         $dto = new ReviewFormDto();
         if (!$request->isMethod('POST')) {
             $dto->companyId   = $request->query->getInt('companyId') ?: null;
-            $dto->companyName = $request->query->getString('companyName') ?: null;
+            $dto->companyName = strip_tags(trim($request->query->getString('companyName'))) ?: null;
         }
         $form = $this->createForm(ReviewType::class, $dto);
         $form->handleRequest($request);

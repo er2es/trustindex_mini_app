@@ -196,14 +196,17 @@
                 const res  = await fetch(`/api/companies/autocomplete?q=${encodeURIComponent(q)}`);
                 const data = await res.json();
                 if (!data.length) { closeAc(); return; }
-                acDropdown.innerHTML = data.map(item =>
-                    `<button type="button" class="list-group-item list-group-item-action"
-                             data-name="${item.name}">${item.name}</button>`
-                ).join('');
-                acDropdown.style.display = 'block';
-                acDropdown.querySelectorAll('button').forEach(b => {
+                acDropdown.innerHTML = '';
+                data.forEach(item => {
+                    const b = document.createElement('button');
+                    b.type = 'button';
+                    b.className = 'list-group-item list-group-item-action';
+                    b.dataset.name = item.name;
+                    b.textContent  = item.name;
                     b.addEventListener('click', () => selectAcItem(b));
+                    acDropdown.appendChild(b);
                 });
+                acDropdown.style.display = 'block';
             } catch { closeAc(); }
         }, 250);
     }

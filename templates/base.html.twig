@@ -156,22 +156,36 @@
 <script>
     function showToast(message, type = 'success') {
         const container = document.getElementById('toastContainer');
-        const id = 'toast-' + Date.now();
-        const bg = type === 'success' ? 'bg-success' : 'bg-danger';
+        const bg   = type === 'success' ? 'bg-success' : 'bg-danger';
         const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill';
 
-        container.insertAdjacentHTML('beforeend', `
-            <div id="${id}" class="toast align-items-center text-white ${bg} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        <i class="bi ${icon} me-2"></i>${message}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-                </div>
-            </div>
-        `);
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center text-white ${bg} border-0`;
+        toastEl.setAttribute('role', 'alert');
+        toastEl.setAttribute('aria-live', 'assertive');
+        toastEl.setAttribute('aria-atomic', 'true');
 
-        const toastEl = document.getElementById(id);
+        const row = document.createElement('div');
+        row.className = 'd-flex';
+
+        const body = document.createElement('div');
+        body.className = 'toast-body';
+
+        const ico = document.createElement('i');
+        ico.className = `bi ${icon} me-2`;
+        body.appendChild(ico);
+        body.appendChild(document.createTextNode(message));
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'btn-close btn-close-white me-2 m-auto';
+        closeBtn.setAttribute('data-bs-dismiss', 'toast');
+
+        row.appendChild(body);
+        row.appendChild(closeBtn);
+        toastEl.appendChild(row);
+        container.appendChild(toastEl);
+
         const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
         toast.show();
         toastEl.addEventListener('hidden.bs.toast', () => toastEl.remove());

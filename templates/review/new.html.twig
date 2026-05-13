@@ -258,14 +258,18 @@
                 const data = await res.json();
                 if (!data.length) { closeDropdown(); return; }
 
-                dropdown.innerHTML = data.map(item =>
-                    `<button type="button" class="list-group-item list-group-item-action py-2" data-name="${item.name}" data-id="${item.id}">${item.name}</button>`
-                ).join('');
-                dropdown.style.display = 'block';
-
-                dropdown.querySelectorAll('button').forEach(btn => {
+                dropdown.innerHTML = '';
+                data.forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'list-group-item list-group-item-action py-2';
+                    btn.dataset.name = item.name;
+                    btn.dataset.id   = item.id;
+                    btn.textContent  = item.name;
                     btn.addEventListener('click', () => selectDropdownItem(btn));
+                    dropdown.appendChild(btn);
                 });
+                dropdown.style.display = 'block';
             } catch {}
         }, 250);
     });
