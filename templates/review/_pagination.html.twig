@@ -1,0 +1,55 @@
+{% if totalPages > 1 %}
+{% set start = [1, page - 1]|max %}
+{% set end   = [totalPages, page + 1]|min %}
+{# Csúszó 3-as ablak: ha az ablak kisebb 3-nál, toljuk #}
+{% if end - start < 2 %}
+    {% if start == 1 %}
+        {% set end = [totalPages, 3]|min %}
+    {% else %}
+        {% set start = [1, end - 2]|max %}
+    {% endif %}
+{% endif %}
+
+<nav class="mt-4 d-flex justify-content-center" aria-label="Lapozó">
+    <ul class="pagination pagination-sm mb-0">
+
+        {# Előző #}
+        <li class="page-item {{ page <= 1 ? 'disabled' }}">
+            <a class="page-link rounded-pill me-1 pagination-link"
+               href="#" data-page="{{ page - 1 }}"
+               aria-label="Előző">‹</a>
+        </li>
+
+        {# Első oldal ha nem látszik #}
+        {% if start > 1 %}
+            <li class="page-item">
+                <a class="page-link rounded-pill me-1 pagination-link" href="#" data-page="1">1</a>
+            </li>
+            {% if start > 2 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+        {% endif %}
+
+        {# Max 3 oldalszám #}
+        {% for p in start..end %}
+            <li class="page-item {{ p == page ? 'active' }}">
+                <a class="page-link rounded-pill me-1 pagination-link" href="#" data-page="{{ p }}">{{ p }}</a>
+            </li>
+        {% endfor %}
+
+        {# Utolsó oldal ha nem látszik #}
+        {% if end < totalPages %}
+            {% if end < totalPages - 1 %}<li class="page-item disabled"><span class="page-link">…</span></li>{% endif %}
+            <li class="page-item">
+                <a class="page-link rounded-pill me-1 pagination-link" href="#" data-page="{{ totalPages }}">{{ totalPages }}</a>
+            </li>
+        {% endif %}
+
+        {# Következő #}
+        <li class="page-item {{ page >= totalPages ? 'disabled' }}">
+            <a class="page-link rounded-pill pagination-link"
+               href="#" data-page="{{ page + 1 }}"
+               aria-label="Következő">›</a>
+        </li>
+
+    </ul>
+</nav>
+{% endif %}

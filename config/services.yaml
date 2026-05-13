@@ -5,6 +5,8 @@ services:
     _defaults:
         autowire: true
         autoconfigure: true
+        bind:
+            int $reviewsPerPage: '%env(int:REVIEWS_PER_PAGE)%'
 
     App\:
         resource: '../src/'

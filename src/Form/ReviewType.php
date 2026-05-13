@@ -6,6 +6,7 @@ namespace App\Form;
 
 use App\Form\Dto\ReviewFormDto;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
@@ -28,15 +29,14 @@ class ReviewType extends AbstractType
                     'class' => 'form-control',
                 ],
             ])
-            ->add('rating', HiddenType::class, [
-                'attr' => ['id' => 'rating-value'],
-            ])
+            ->add('rating', HiddenType::class)
             ->add('reviewText', TextareaType::class, [
                 'label' => 'Vélemény',
                 'attr' => [
                     'placeholder' => 'Írj részletes véleményt...',
                     'rows' => 5,
                     'class' => 'form-control',
+                    'maxlength' => 1000,
                 ],
             ])
             ->add('authorEmail', EmailType::class, [
@@ -51,6 +51,12 @@ class ReviewType extends AbstractType
                 'attr' => ['class' => 'btn btn-ti w-100 py-2 mt-2'],
             ])
         ;
+
+        // HiddenType strings-ként adja vissza az értéket; átalakítjuk ?int-re
+        $builder->get('rating')->addModelTransformer(new CallbackTransformer(
+            static fn (?int $v): string => $v !== null ? (string) $v : '',
+            static fn (?string $v): ?int => ($v !== null && $v !== '') ? (int) $v : null,
+        ));
     }
 
     public function configureOptions(OptionsResolver $resolver): void

@@ -22,9 +22,15 @@
 {% block javascripts %}
 <script>
 (function () {
+    const MAX_REVIEW = 1000;
+
+    // Szigorú regex: nem kezdődhet kötőjellel vagy ponttal, és szigorú a domain része is.
+    // mert valójában RFC szerint a -minta.ember@valami.hu valid email cím, de postfix meg lehal miatta
+    const smtpSafeEmailPattern = /^(?![-.])(?=.{1,64}@)[a-zA-Z0-9_+-]+(?:\.[a-zA-Z0-9_+-]+)*@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+
     // ── Star picker ──────────────────────────────────────────────
     const ratingInput = document.getElementById('rating-value');
-    const stars = document.querySelectorAll('.star-btn');
+    const stars       = document.querySelectorAll('.star-btn');
 
     function setStars(value) {
         stars.forEach(btn => {
@@ -50,32 +56,60 @@
     // ── Error helpers ─────────────────────────────────────────────
     const fieldIdMap = {
         companyName: 'company-name-input',
-        reviewText: 'review_reviewText',
+        reviewText:  'review_reviewText',
         authorEmail: 'review_authorEmail',
-        rating: 'rating-value',
+        rating:      'rating-value',
     };
 
     function showFieldError(field, message) {
-        const elId = fieldIdMap[field] || `review_${field}`;
-        const el = document.getElementById(elId);
-        if (!el) return;
+        if (field === '_form') {
+            // _form szintű hibát a rating errornál jelenítjük meg (általában rating missing)
+            showFieldError('rating', message);
+            return;
+        }
 
+        const elId = fieldIdMap[field] || `review_${field}`;
+        const el   = document.getElementById(elId);
+
+        if (field === 'rating') {
+            const errEl = document.getElementById('rating-error');
+            if (errEl) {
+                errEl.textContent  = message;
+                errEl.style.cssText = '';          // töröljük a display:none!important-ot
+                errEl.classList.add('d-block');
+            }
+            document.getElementById('star-picker')?.classList.add('is-invalid');
+            return;
+        }
+
+        if (!el) return;
         el.classList.add('is-invalid');
+        el.classList.remove('is-valid');
 
         const existing = el.parentElement.querySelector('.invalid-feedback');
         if (existing) {
             existing.textContent = message;
         } else {
             const div = document.createElement('div');
-            div.className = 'invalid-feedback d-block';
+            div.className   = 'invalid-feedback d-block';
             div.textContent = message;
             el.after(div);
         }
     }
 
     function clearFieldError(field) {
+        if (field === 'rating') {
+            const errEl = document.getElementById('rating-error');
+            if (errEl) {
+                errEl.textContent  = '';
+                errEl.style.cssText = 'display:none!important';
+            }
+            document.getElementById('star-picker')?.classList.remove('is-invalid');
+            return;
+        }
+
         const elId = fieldIdMap[field] || `review_${field}`;
-        const el = document.getElementById(elId);
+        const el   = document.getElementById(elId);
         if (!el) return;
         el.classList.remove('is-invalid');
         el.classList.add('is-valid');
@@ -85,54 +119,92 @@
     function clearAllErrors() {
         document.querySelectorAll('.is-invalid').forEach(el => {
             el.classList.remove('is-invalid');
-            el.parentElement.querySelector('.invalid-feedback')?.remove();
+            el.parentElement?.querySelector('.invalid-feedback')?.remove();
         });
         document.querySelectorAll('.is-valid').forEach(el => el.classList.remove('is-valid'));
+        const errEl = document.getElementById('rating-error');
+        if (errEl) errEl.style.cssText = 'display:none!important';
     }
 
-    // ── Inline blur validation ────────────────────────────────────
-    const validateFields = ['company-name-input', 'review_reviewText', 'review_authorEmail'];
-    const reverseFieldMap = Object.fromEntries(Object.entries(fieldIdMap).map(([k, v]) => [v, k]));
+    // ── Karakter-számláló ────────────────────────────────────────
+    const reviewTextEl = document.getElementById('review_reviewText');
+    const counterEl    = document.getElementById('review-text-counter');
+
+    function updateCounter() {
+        if (!reviewTextEl || !counterEl) return;
+        const remaining = MAX_REVIEW - reviewTextEl.value.length;
+        counterEl.textContent = `${remaining} karakter maradt`;
+        counterEl.style.color = remaining < 50 ? 'var(--ti-star)' : remaining < 0 ? '#dc3545' : '';
+    }
+
+    reviewTextEl?.addEventListener('input', updateCounter);
+    updateCounter();
+
+    // ── Live validáció (input + debounce) ────────────────────────
+    const validateFields   = ['company-name-input', 'review_reviewText', 'review_authorEmail'];
+    const reverseFieldMap  = Object.fromEntries(Object.entries(fieldIdMap).map(([k, v]) => [v, k]));
+    const debounceTimers   = {};
+
+    async function validateField(elId) {
+        const field = reverseFieldMap[elId];
+        if (!field) return;
+
+        const el    = document.getElementById(elId);
+        const value = el?.value ?? '';
+
+        // E-mail kliens oldali gyors ellenőrzés (SMTP-safe pattern)
+        if (field === 'authorEmail' && value.length > 0) {
+            if (!smtpSafeEmailPattern.test(value)) {
+                showFieldError(field, 'Érvényes e-mail cím szükséges.');
+                return;
+            }
+        }
+
+        try {
+            const res  = await fetch('/api/reviews/validate', {
+                method:  'POST',
+                headers: {'Content-Type': 'application/json'},
+                body:    JSON.stringify({field, value}),
+            });
+            const data = await res.json();
+            if (!data.valid) {
+                showFieldError(field, data.errors[0]);
+            } else {
+                clearFieldError(field);
+            }
+        } catch {}
+    }
 
     validateFields.forEach(elId => {
         const el = document.getElementById(elId);
         if (!el) return;
 
-        el.addEventListener('blur', async function () {
-            const field = reverseFieldMap[elId];
-            if (!field) return;
+        el.addEventListener('input', () => {
+            clearTimeout(debounceTimers[elId]);
+            debounceTimers[elId] = setTimeout(() => validateField(elId), 500);
+        });
 
-            try {
-                const res = await fetch('/api/reviews/validate', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({field, value: el.value}),
-                });
-                const data = await res.json();
-                if (!data.valid) {
-                    showFieldError(field, data.errors[0]);
-                } else {
-                    clearFieldError(field);
-                }
-            } catch {}
+        el.addEventListener('blur', () => {
+            clearTimeout(debounceTimers[elId]);
+            validateField(elId);
         });
     });
 
     // ── AJAX form submit ──────────────────────────────────────────
     const reviewForm = document.getElementById('review-form');
 
-    reviewForm.addEventListener('submit', async function (e) {
+    reviewForm?.addEventListener('submit', async function (e) {
         e.preventDefault();
         clearAllErrors();
 
         const submitBtn = reviewForm.querySelector('[type="submit"]');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Küldés...';
+        submitBtn.disabled    = true;
+        submitBtn.innerHTML   = '<span class="spinner-border spinner-border-sm me-2"></span>Küldés...';
 
         try {
-            const res = await fetch(reviewForm.action, {
-                method: 'POST',
-                body: new FormData(reviewForm),
+            const res  = await fetch(reviewForm.action, {
+                method:  'POST',
+                body:    new FormData(reviewForm),
                 headers: {'X-Requested-With': 'XMLHttpRequest'},
             });
 
@@ -144,31 +216,31 @@
                 return;
             }
 
-            // Inline errors – no toaster
+            // Inline hibák – minden mezőre, _form általános hibákat is kezeljük
             Object.entries(data.errors || {}).forEach(([field, messages]) => {
                 showFieldError(field, messages[0]);
             });
         } catch {
             showToast('Hiba történt a küldés során. Kérjük próbáld újra.', 'error');
         } finally {
-            submitBtn.disabled = false;
+            submitBtn.disabled  = false;
             submitBtn.innerHTML = 'Vélemény beküldése';
         }
     });
 
     // ── Autocomplete ──────────────────────────────────────────────
     const companyInput = document.getElementById('company-name-input');
-    const dropdown = document.getElementById('company-autocomplete');
-    let debounceTimer;
+    const dropdown     = document.getElementById('company-autocomplete');
+    let autocompleteTimer;
 
     companyInput?.addEventListener('input', function () {
-        clearTimeout(debounceTimer);
+        clearTimeout(autocompleteTimer);
         const q = this.value.trim();
         if (q.length < 3) { dropdown.style.display = 'none'; return; }
 
-        debounceTimer = setTimeout(async () => {
+        autocompleteTimer = setTimeout(async () => {
             try {
-                const res = await fetch(`/api/companies/autocomplete?q=${encodeURIComponent(q)}`);
+                const res  = await fetch(`/api/companies/autocomplete?q=${encodeURIComponent(q)}`);
                 const data = await res.json();
                 if (!data.length) { dropdown.style.display = 'none'; return; }
 
@@ -179,7 +251,7 @@
 
                 dropdown.querySelectorAll('button').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        companyInput.value = btn.dataset.name;
+                        companyInput.value     = btn.dataset.name;
                         dropdown.style.display = 'none';
                         clearFieldError('companyName');
                     });

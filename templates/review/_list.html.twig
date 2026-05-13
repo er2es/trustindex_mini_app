@@ -1,4 +1,4 @@
-{% if reviews is empty %}
+{% if reviews is empty and (page is not defined or page <= 1) %}
     <div class="text-center py-5 text-muted" id="empty-state">
         <i class="bi bi-search fs-1 d-block mb-3"></i>
         {% if query is defined and query %}
@@ -17,4 +17,8 @@
             </div>
         {% endfor %}
     </div>
+
+    {% if totalPages is defined %}
+        {% include 'review/_pagination.html.twig' %}
+    {% endif %}
 {% endif %}

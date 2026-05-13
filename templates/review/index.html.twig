@@ -2,13 +2,48 @@
 
 {% block title %}Vélemények – Trustindex{% endblock %}
 
+{% block stylesheets %}
+<style>
+    #search-autocomplete .list-group-item {
+        border: none;
+        padding: .55rem 1rem;
+        font-size: .875rem;
+        color: #333;
+        cursor: pointer;
+    }
+    #search-autocomplete .list-group-item:hover,
+    #search-autocomplete .list-group-item:focus {
+        background-color: #f0faf3;
+        color: var(--ti-green);
+    }
+    #search-autocomplete {
+        border-radius: 10px;
+        border: 1px solid #dee2e6;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0,0,0,.10);
+    }
+    .pagination .page-link {
+        color: var(--ti-green);
+        border-color: #dee2e6;
+        min-width: 2.2rem;
+        text-align: center;
+    }
+    .pagination .page-item.active .page-link {
+        background-color: var(--ti-green);
+        border-color: var(--ti-green);
+        color: #fff;
+    }
+    .pagination .page-item.disabled .page-link { color: #aaa; }
+</style>
+{% endblock %}
+
 {% block body %}
 <div class="container py-4">
 
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
         <div>
             <h1 class="h4 fw-bold mb-1">Ügyfélvélemények</h1>
-            <p class="text-muted small mb-0" id="result-count">{{ reviews|length }} vélemény</p>
+            <p class="text-muted small mb-0" id="result-count">{{ total }} vélemény</p>
         </div>
         <a href="{{ path('review_new') }}" class="btn btn-ti px-4">
             <i class="bi bi-plus-lg me-1"></i>Vélemény írása
@@ -16,26 +51,34 @@
     </div>
 
     {# Kereső #}
-    <form method="get" action="{{ path('review_index') }}" class="card p-3 mb-4" id="search-form">
+    <form method="get" action="{{ path('review_index') }}" class="card p-3 mb-3" id="search-form" novalidate>
         <div class="row g-2 align-items-center">
-            <div class="col">
+            <div class="col position-relative">
                 <div class="input-group">
                     <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                    <input type="text"
+                    <input type="search"
                            name="q"
                            value="{{ query }}"
-                           placeholder="Keresés cégek és vélemények között..."
+                           placeholder="Keresés cégek között..."
                            class="form-control border-start-0 ps-0"
-                           id="search-input">
+                           id="search-input"
+                           minlength="2"
+                           autocomplete="off">
                 </div>
+                <div id="search-autocomplete" class="list-group position-absolute"
+                     style="z-index:100;top:calc(100% + 4px);left:0;right:0;display:none;"></div>
+                <div id="search-error" class="text-danger small mt-1" style="display:none;"></div>
             </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-ti px-3">Keresés</button>
-                {% if query %}
-                    <a href="{{ path('review_index') }}" class="btn btn-outline-secondary px-3 ms-1">
-                        <i class="bi bi-x-lg"></i>
-                    </a>
-                {% endif %}
+            <div class="col-auto d-flex gap-1 align-items-center">
+                <button type="submit" class="btn btn-ti px-3" id="search-btn">
+                    <span id="search-btn-text"><i class="bi bi-search me-1"></i>Keresés</span>
+                    <span id="search-btn-spinner" class="spinner-border spinner-border-sm" style="display:none;"></span>
+                </button>
+                <a href="{{ path('review_index') }}"
+                   class="btn btn-outline-secondary px-3 {{ query ? '' : 'd-none' }}"
+                   id="search-reset" title="Keresés törlése">
+                    <i class="bi bi-x-lg"></i>
+                </a>
             </div>
         </div>
         <div class="mt-2 ms-1">
@@ -49,9 +92,28 @@
         </div>
     </form>
 
+    {# Tartós keresési állapot sáv #}
+    <div id="search-state" class="mb-3 px-1 d-flex align-items-center gap-2 small {{ query ? '' : 'd-none' }}">
+        <i class="bi bi-funnel-fill text-muted"></i>
+        <span class="text-muted">Keresés:</span>
+        <strong id="search-state-query">{{ query }}</strong>
+        <span class="text-muted">—</span>
+        <span id="search-state-count">{{ total }} találat</span>
+        <a href="{{ path('review_index') }}" class="ms-1 text-muted text-decoration-none" title="Törlés">
+            <i class="bi bi-x-circle"></i>
+        </a>
+    </div>
+
     {# Lista (AJAX-frissíthető) #}
     <div id="review-list-wrapper">
-        {% include 'review/_list.html.twig' with {reviews: reviews, query: query} %}
+        {% include 'review/_list.html.twig' with {
+            reviews: reviews,
+            query: query,
+            page: page,
+            totalPages: totalPages,
+            total: total,
+            includeText: includeText
+        } %}
     </div>
 
 </div>
@@ -60,37 +122,173 @@
 {% block javascripts %}
 <script>
 (function () {
-    const form = document.getElementById('search-form');
-    const wrapper = document.getElementById('review-list-wrapper');
-    const counter = document.getElementById('result-count');
-    let currentQuery = '';
+    const form        = document.getElementById('search-form');
+    const input       = document.getElementById('search-input');
+    const errorEl     = document.getElementById('search-error');
+    const wrapper     = document.getElementById('review-list-wrapper');
+    const counter     = document.getElementById('result-count');
+    const searchBtn   = document.getElementById('search-btn');
+    const btnText     = document.getElementById('search-btn-text');
+    const btnSpinner  = document.getElementById('search-btn-spinner');
+    const resetBtn    = document.getElementById('search-reset');
+    const acDropdown  = document.getElementById('search-autocomplete');
+    const stateBar    = document.getElementById('search-state');
+    const stateQuery  = document.getElementById('search-state-query');
+    const stateCount  = document.getElementById('search-state-count');
 
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
+    let submitting = false;
+    let acTimer;
+    let currentPage = {{ page }};
+
+    // ── Loader ───────────────────────────────────────────────────
+    function setLoading(on) {
+        submitting               = on;
+        searchBtn.disabled       = on;
+        btnText.style.display    = on ? 'none' : '';
+        btnSpinner.style.display = on ? 'inline-block' : 'none';
+    }
+
+    // ── Validáció ────────────────────────────────────────────────
+    function showSearchError(msg) {
+        input.classList.add('is-invalid');
+        errorEl.textContent   = msg;
+        errorEl.style.display = '';
+    }
+    function clearSearchError() {
+        input.classList.remove('is-invalid');
+        errorEl.style.display = 'none';
+    }
+
+    input.addEventListener('input', () => {
+        const v = input.value.trim();
+        if (v.length >= 2 || v === '') clearSearchError();
+        resetBtn.classList.toggle('d-none', v === '');
+        handleAutocomplete(v);
+    });
+
+    // ── Autocomplete ─────────────────────────────────────────────
+    function closeAc() { acDropdown.style.display = 'none'; }
+
+    function handleAutocomplete(q) {
+        clearTimeout(acTimer);
+        if (q.length < 2) { closeAc(); return; }
+        acTimer = setTimeout(async () => {
+            try {
+                const res  = await fetch(`/api/companies/autocomplete?q=${encodeURIComponent(q)}`);
+                const data = await res.json();
+                if (!data.length) { closeAc(); return; }
+                acDropdown.innerHTML = data.map(item =>
+                    `<button type="button" class="list-group-item list-group-item-action"
+                             data-name="${item.name}">${item.name}</button>`
+                ).join('');
+                acDropdown.style.display = 'block';
+                acDropdown.querySelectorAll('button').forEach(b => {
+                    b.addEventListener('click', () => {
+                        input.value = b.dataset.name;
+                        closeAc();
+                        clearSearchError();
+                        resetBtn.classList.remove('d-none');
+                    });
+                });
+            } catch { closeAc(); }
+        }, 250);
+    }
+
+    document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !acDropdown.contains(e.target)) closeAc();
+    });
+
+    // ── Keresés AJAX ─────────────────────────────────────────────
+    async function doSearch(page = 1) {
+        if (submitting) return;
+        closeAc();
+
+        const q = input.value.trim();
+        if (q.length === 0) { showSearchError('Kérjük, adj meg keresési kifejezést.'); input.focus(); return; }
+        if (q.length < 2)   { showSearchError('Legalább 2 karakter szükséges.'); input.focus(); return; }
+
+        clearSearchError();
+        setLoading(true);
+        input.value = q;
+        resetBtn.classList.remove('d-none');
 
         const params = new URLSearchParams(new FormData(form));
+        params.set('page', page);
         const url = form.action + '?' + params.toString();
-
-        // Update URL without reload
         history.pushState({}, '', url);
-
-        currentQuery = params.get('q') || '';
+        currentPage = page;
 
         try {
-            const res = await fetch(url, {
-                headers: {'X-Requested-With': 'XMLHttpRequest'},
+            const res = await fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+
+            wrapper.innerHTML   = data.html;
+            counter.textContent = data.count + ' vélemény';
+
+            // Tartós állapot sáv frissítése
+            stateQuery.textContent = q;
+            stateCount.textContent = data.count + ' találat';
+            stateBar.classList.remove('d-none');
+
+            showToast(data.count === 0
+                ? 'Nincs találat erre: „' + q + '"'
+                : data.count + ' találat',
+                data.count === 0 ? 'error' : 'success');
+        } catch {
+            showToast('Hiba a keresés során. Kérjük próbáld újra.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    form.addEventListener('submit', e => { e.preventDefault(); doSearch(1); });
+    window.addEventListener('popstate', () => form.requestSubmit());
+
+    // ── Pagination klikk delegálás ────────────────────────────────
+    wrapper.addEventListener('click', function (e) {
+        const pageLink = e.target.closest('.pagination-link');
+        if (!pageLink) return;
+        e.preventDefault();
+        const p = parseInt(pageLink.dataset.page);
+        if (!isNaN(p) && p >= 1) doSearch(p);
+    });
+
+    // ── Like / dislike delegálás ──────────────────────────────────
+    wrapper.addEventListener('click', async function (e) {
+        const reactionBtn = e.target.closest('.card-reaction-btn');
+        if (!reactionBtn) return;
+
+        const reviewId = reactionBtn.dataset.reviewId;
+        const type     = reactionBtn.dataset.type;
+        reactionBtn.disabled = true;
+
+        try {
+            const res = await fetch(`/api/reviews/${reviewId}/react`, {
+                method:  'POST',
+                headers: {'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest'},
+                body:    JSON.stringify({type}),
             });
             if (!res.ok) throw new Error();
             const data = await res.json();
-            wrapper.innerHTML = data.html;
-            counter.textContent = data.count + ' vélemény';
+
+            const card     = reactionBtn.closest('article');
+            const likeBtn  = card.querySelector('[data-type="like"]');
+            const dislikeBtn = card.querySelector('[data-type="dislike"]');
+
+            card.querySelector('.reaction-like-count').textContent    = data.likes;
+            card.querySelector('.reaction-dislike-count').textContent = data.dislikes;
+
+            likeBtn.classList.toggle('btn-success', data.userReaction === 'like');
+            likeBtn.classList.toggle('btn-outline-secondary', data.userReaction !== 'like');
+            dislikeBtn.classList.toggle('btn-danger', data.userReaction === 'dislike');
+            dislikeBtn.classList.toggle('btn-outline-secondary', data.userReaction !== 'dislike');
         } catch {
-            showToast('Hiba a keresés során.', 'error');
+            showToast('Hiba történt, kérjük próbáld újra.', 'error');
+        } finally {
+            reactionBtn.disabled = false;
         }
     });
-
-    // Browser back/forward
-    window.addEventListener('popstate', () => form.requestSubmit());
 })();
 </script>
 {% endblock %}

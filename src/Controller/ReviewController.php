@@ -25,6 +25,7 @@ class ReviewController extends AbstractController
         private readonly CompanyService $companyService,
         private readonly EntityManagerInterface $entityManager,
         private readonly FormErrorExtractor $formErrorExtractor,
+        private readonly int $reviewsPerPage,
     ) {
     }
 
@@ -33,23 +34,46 @@ class ReviewController extends AbstractController
     {
         $query = trim($request->query->getString('q'));
         $includeText = $request->query->getBoolean('includeText', false);
+        $page = max(1, $request->query->getInt('page', 1));
 
-        $reviews = '' !== $query
-            ? $this->reviewRepository->search($query, $includeText)
-            : $this->reviewRepository->findAllOrderedByDate();
+        // Minimum 2 karakter szükséges a kereséshez
+        $validQuery = \strlen($query) >= 2 ? $query : '';
+
+        $total = '' !== $validQuery
+            ? $this->reviewRepository->countSearch($validQuery, $includeText)
+            : $this->reviewRepository->countAll();
+
+        $totalPages = max(1, (int) ceil($total / $this->reviewsPerPage));
+        $page = min($page, $totalPages);
+
+        $reviews = '' !== $validQuery
+            ? $this->reviewRepository->search($validQuery, $includeText, $page, $this->reviewsPerPage)
+            : $this->reviewRepository->findAllOrderedByDate($page, $this->reviewsPerPage);
+
+        $paginationVars = [
+            'page' => $page,
+            'totalPages' => $totalPages,
+            'total' => $total,
+            'query' => $validQuery,
+            'includeText' => $includeText,
+        ];
 
         if ($request->isXmlHttpRequest()) {
             return $this->json([
-                'html' => $this->renderView('review/_list.html.twig', ['reviews' => $reviews, 'query' => $query]),
-                'count' => \count($reviews),
+                'html' => $this->renderView('review/_list.html.twig', array_merge(
+                    ['reviews' => $reviews],
+                    $paginationVars,
+                )),
+                'count' => $total,
+                'page' => $page,
+                'totalPages' => $totalPages,
             ]);
         }
 
-        return $this->render('review/index.html.twig', [
-            'reviews' => $reviews,
-            'query' => $query,
-            'includeText' => $includeText,
-        ]);
+        return $this->render('review/index.html.twig', array_merge(
+            ['reviews' => $reviews, 'includeText' => $includeText],
+            $paginationVars,
+        ));
     }
 
     #[Route('/new', name: 'new', methods: ['GET', 'POST'])]
@@ -61,7 +85,9 @@ class ReviewController extends AbstractController
 
         if ($form->isSubmitted()) {
             if ($form->isValid()) {
-                $company = $this->companyService->findOrCreate((string) $dto->companyName);
+                $company = $this->companyService->findOrCreate(
+                    trim((string) $dto->companyName) ?: 'Névtelen'
+                );
                 $review = new Review($company, (int) $dto->rating, (string) $dto->reviewText, (string) $dto->authorEmail);
 
                 $this->entityManager->persist($review);

@@ -32,7 +32,7 @@ class Review
 
     #[ORM\Column(type: 'text')]
     #[Assert\NotBlank]
-    #[Assert\Length(min: 10, max: 5000)]
+    #[Assert\Length(min: 10, max: 1000)]
     private string $reviewText;
 
     #[ORM\Column(type: 'string', length: 255)]

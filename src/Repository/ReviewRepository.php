@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Review;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -18,38 +19,60 @@ class ReviewRepository extends ServiceEntityRepository
         parent::__construct($registry, Review::class);
     }
 
-    /**
-     * Full list ordered by newest first, company eager-loaded.
-     *
-     * @return Review[]
-     */
-    public function findAllOrderedByDate(): array
+    /** @return Review[] */
+    public function findAllOrderedByDate(int $page = 1, int $perPage = 0): array
     {
-        return $this->createQueryBuilder('r')
-            ->join('r.company', 'c')
-            ->addSelect('c')
-            ->orderBy('r.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
-     * Multi-token search across company name and optionally review text.
-     * Each token must appear somewhere (AND logic). No stopword filtering on search.
-     *
-     * @return Review[]
-     */
-    public function search(string $query, bool $includeReviewText = false): array
-    {
-        $tokens = $this->tokenize($query);
-        if ([] === $tokens) {
-            return $this->findAllOrderedByDate();
-        }
-
         $qb = $this->createQueryBuilder('r')
             ->join('r.company', 'c')
             ->addSelect('c')
             ->orderBy('r.createdAt', 'DESC');
+
+        $this->applyPagination($qb, $page, $perPage);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function countAll(): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @return Review[] */
+    public function search(string $query, bool $includeReviewText = false, int $page = 1, int $perPage = 0): array
+    {
+        $tokens = $this->tokenize($query);
+        if ([] === $tokens) {
+            return $this->findAllOrderedByDate($page, $perPage);
+        }
+
+        $qb = $this->buildSearchQb($tokens, $includeReviewText)
+            ->addSelect('c')
+            ->orderBy('r.createdAt', 'DESC');
+
+        $this->applyPagination($qb, $page, $perPage);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function countSearch(string $query, bool $includeReviewText = false): int
+    {
+        $tokens = $this->tokenize($query);
+        if ([] === $tokens) {
+            return $this->countAll();
+        }
+
+        return (int) $this->buildSearchQb($tokens, $includeReviewText)
+            ->select('COUNT(r.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    private function buildSearchQb(array $tokens, bool $includeReviewText): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('r')->join('r.company', 'c');
 
         foreach ($tokens as $i => $token) {
             $param = "t{$i}";
@@ -65,7 +88,15 @@ class ReviewRepository extends ServiceEntityRepository
             $qb->setParameter($param, '%' . $token . '%');
         }
 
-        return $qb->getQuery()->getResult();
+        return $qb;
+    }
+
+    private function applyPagination(QueryBuilder $qb, int $page, int $perPage): void
+    {
+        if ($perPage <= 0) {
+            return;
+        }
+        $qb->setFirstResult(($page - 1) * $perPage)->setMaxResults($perPage);
     }
 
     /** @return string[] */

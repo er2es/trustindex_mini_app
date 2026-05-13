@@ -3,18 +3,17 @@
     {# Cégnév + autocomplete #}
     <div class="mb-3 position-relative">
         {{ form_label(form.companyName, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
-        {{ form_widget(form.companyName, {attr: {
+        {{ form_widget(form.companyName, {'id': 'company-name-input', attr: {
             class: 'form-control' ~ (form.companyName.vars.errors|length ? ' is-invalid' : ''),
-            id: 'company-name-input'
         }}) }}
         <div id="company-autocomplete" class="list-group position-absolute w-100 shadow-sm" style="z-index:100;top:100%;display:none;"></div>
         {{ form_errors(form.companyName, {attr: {class: 'invalid-feedback d-block'}}) }}
     </div>
 
-    {# Csillag értékelő #}
+    {# Csillag értékelő – a hidden mező id-ját felülírjuk a vars-ban #}
     <div class="mb-3">
         <label class="form-label fw-semibold">Értékelés <span class="text-danger">*</span></label>
-        {{ form_widget(form.rating) }}
+        {{ form_widget(form.rating, {'id': 'rating-value'}) }}
         <div class="star-picker d-flex gap-1 mt-1" id="star-picker">
             {% for i in 1..5 %}
                 <button type="button"
@@ -24,20 +23,24 @@
                         style="color: #ccc; transition: color .1s;">&#9733;</button>
             {% endfor %}
         </div>
-        {% if form.rating.vars.errors|length %}
-            <div class="text-danger small mt-1">
+        <div id="rating-error" class="invalid-feedback d-block" style="display:none!important;">
+            {% if form.rating.vars.errors|length %}
                 {% for error in form.rating.vars.errors %}{{ error.message }}{% endfor %}
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 
-    {# Vélemény szövege #}
+    {# Vélemény szövege + karakter-számláló #}
     <div class="mb-3">
         {{ form_label(form.reviewText, null, {label_attr: {class: 'form-label fw-semibold'}}) }}
         {{ form_widget(form.reviewText, {attr: {
             class: 'form-control' ~ (form.reviewText.vars.errors|length ? ' is-invalid' : ''),
+            maxlength: 1000,
         }}) }}
-        {{ form_errors(form.reviewText, {attr: {class: 'invalid-feedback d-block'}}) }}
+        <div class="d-flex justify-content-between mt-1">
+            <div>{{ form_errors(form.reviewText, {attr: {class: 'invalid-feedback d-block'}}) }}</div>
+            <small id="review-text-counter" class="text-muted">1000 karakter maradt</small>
+        </div>
     </div>
 
     {# E-mail #}
