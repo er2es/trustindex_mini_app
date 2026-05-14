@@ -9,7 +9,7 @@ Agent: Claude Code
 
 Egyéb: .env, phpunit.xml szándékosan van commitolva a könyebb gyorsabb indítás miatt, a reqiure/require-dev szekció is ennek mentén van
 
-## Indítás - javasolt DEMO telepítés*
+## Indítás - javasolt DEMO telepítés
 
 ```bash
 
@@ -59,8 +59,11 @@ php vendor/bin/php-cs-fixer fix
 ## Parancsok
 
 ```bash
-php bin/console app:data:clear # minden értékelés és cég törlése
-php bin/console app:data:load-demo --count=100 # demo adatok generálása, igazából fixture is lehetett volna
+# minden értékelés és cég törlése
+php bin/console app:data:clear
+
+# demo adatok generálása, igazából fixture is lehetett volna
+php bin/console app:data:load-demo --count=100 
 ```
 
 ## Miért jobb / több :)
