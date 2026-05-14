@@ -7,6 +7,8 @@ Tesztelve: win 11 + php 8.4.16 + composer 2.8.2 + Symfony CLI version 5.5.6
 
 Agent: Claude Code
 
+Egyéb: .env, phpunit.xml szándékosan van commitolva a könyebb gyorsabb indítás miatt, a reqiure/require-dev szekció is ennek mentén van
+
 ## Indítás - javasolt DEMO telepítés*
 
 ```bash
