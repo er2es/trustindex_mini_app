@@ -7,12 +7,13 @@ Tesztelve: win 11 + php 8.4.16 + composer 2.8.2 + Symfony CLI version 5.5.6
 
 Agent: Claude Code
 
-## Indítás (prod) - javasolt DEMO telepítés*
+## Indítás - javasolt DEMO telepítés*
 
 ```bash
 
 #telepítés
-composer install --no-dev --optimize-autoloader --classmap-authoritative
+# .env APP_ENV=prod APP_DEBUG=0
+composer install --optimize-autoloader --classmap-authoritative
 
 #adatbázis (sqllite)
 php bin/console doctrine:migrations:migrate --env=prod --no-interaction
@@ -23,7 +24,6 @@ composer dump-env prod
 #symfony local server indítása
 symfony serve
 ```
-* pár csomag a demo miatt reqiure, ami nem lenne az: php-unit, php-cs-fixer
 
 ## Indítás (fejlesztői mód - webprofiler bundle)
 
@@ -43,8 +43,10 @@ php bin/phpunit
 ## Kódminőség
 
 ```bash
-php vendor/bin/php-cs-fixer fix --dry-run --diff   # ellenőrzés
-php vendor/bin/php-cs-fixer fix                    # javítás
+# ellenőrzés
+php vendor/bin/php-cs-fixer fix --dry-run --diff
+# javítás
+php vendor/bin/php-cs-fixer fix                  
 ```
 
 ## Parancsok
