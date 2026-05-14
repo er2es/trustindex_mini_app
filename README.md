@@ -93,4 +93,11 @@ Az alkalmazás elindítása után: [http://localhost:8000/api/doc](http://localh
 
 | Feladat | Idő |
 |---------|-----|
-| ... | ... |
+| Projekt skeleton, entitások, migráció, repository réteg | ~1,5 ó |
+| Controllerek (web + API), service réteg, DTO-k | ~2 ó |
+| Twig sablonok, Bootstrap design, kártya layout, navbar | ~2 ó |
+| AJAX form submit, inline validáció, csillagpicker, lapozás | ~3 ó |
+| Autocomplete, multi-token keresés, like/dislike | ~2 ó |
+| Profanity szűrő, XSS-védelem, PHPUnit tesztek | ~1,5 ó |
+| Demo parancsok, prod mód, README, javítások | ~1 ó |
+| **Összesen** | **~13 ó** |
