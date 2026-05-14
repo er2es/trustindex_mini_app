@@ -79,7 +79,7 @@ Kieg: igazából nincs mivel azonosítanom (nem scope), egy sessionon belül mar
   és `/api/companies` párhuzamosan ugyanazt az adatot adja vissza — a lekérdezési
   logika a service/repository rétegben közös, de a controller-szintű paginálás,
   szűrés és válasz-összerakás két helyen él, sérült a DRY, Clean Code - de van előnye is némi (SEO jobb a szerveren renderelt adatokkal, kevesebb js, nem kell fetch és render)
-- Form csrf védelem
+- csrf védelem, csak a review beküldése formon van, like/dislike ajaxokon pl nincs
 - Apikon nincs legalább egy api key védelem
 
 
