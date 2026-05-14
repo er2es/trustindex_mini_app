@@ -17,6 +17,7 @@ Egyéb: .env, phpunit.xml szándékosan van commitolva a könyebb gyorsabb indí
 # .env APP_ENV=prod APP_DEBUG=0
 # clone
 git clone https://github.com/er2es/trustindex_mini_app.git
+cd trustindex_mini_app
 
 #install
 composer install --optimize-autoloader --classmap-authoritative
