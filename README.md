@@ -67,9 +67,10 @@ php bin/console app:data:load-demo --count=100 # demo adatok generálása, igaz�
 - Pagination, külön env változó a reviewekre, companykra
 
 ## Ismert bugok
-- A like/dislike oldalfrissítés után nem színezi a saját likejaim / dislikejaim 
+- A like/dislike oldalfrissítés (f5) után nem színezi a saját likejaim / dislikejaim, mert csak munkamenetben tárolom
 Rövid leírás: Nem tudja az user, mire kattintott már, ezért refresh után ha ilyenre kattint, 
 az zavart okozhat, mert lehet épp leveszi a korábbit stb.
+Kieg: igazából nincs mivel azonosítanom (nem scope), egy sessionon belül marad meg csak, munkamenet session-id mentek, lehetett volna cookie is, azzal f5 megtartotta volna, a cookie lifetime alatt
 
 ## Refaktor, partial anti pattern
 - A `/review` és a `/companies` webes végpontok saját AJAX-ágat tartalmaznak
