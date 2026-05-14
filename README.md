@@ -7,7 +7,7 @@ Tesztelve: win 11 + php 8.4.16 + composer 2.8.2 + Symfony CLI version 5.5.6
 
 Agent: Claude Code
 
-## Indítás (prod) - javasolt DEMO telepítés
+## Indítás (prod) - javasolt DEMO telepítés*
 
 ```bash
 
@@ -23,6 +23,7 @@ composer dump-env prod
 #symfony local server indítása
 symfony serve
 ```
+* pár csomag a demo miatt reqiure, ami nem lenne az: php-unit, php-cs-fixer
 
 ## Indítás (fejlesztői mód - webprofiler bundle)
 
